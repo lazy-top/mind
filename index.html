@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- 引入 Vuetify 的 CSS -->
+    <link href="css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="css/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+
+<body>
+
+    <div id="app">
+        <!-- App.vue 根组件 -->
+
+        <v-app>
+            <div>
+                <div id="top-bar" class="transparent-bar">
+                    <v-app-bar app color="white lighten-4" class="elevation-0" flat>
+                        <v-toolbar-title>心聆守护</v-toolbar-title>
+                        <!-- 加上空隙 -->
+
+                        <v-btn text @click="">首页</v-btn>
+                        <v-btn text @click="goToPage('/services')">功能介绍</v-btn>
+                        <v-btn text @click="goToPage('/Privacy_Policy')">隐私政策</v-btn>
+                        <v-menu offset-y>
+                            <template v-slot:activator="{ on }">
+                                <v-btn text v-on="on">更多</v-btn>
+                            </template>
+                            <v-list>
+                                <v-list-item v-for="item in morePages" :key="item.title" @click="goToPage(item.route)">
+                                    <v-list-item-title>{{ item.title }}</v-list-item-title>
+                                </v-list-item>
+                            </v-list>
+                        </v-menu>
+                        <v-spacer></v-spacer>
+
+                        <v-btn text @click="goToPage('/mind/views/chat.html')">立即体验</v-btn>
+    
+                    </v-app-bar>
+    
+                </div>
+            </div>
+
+
+
+
+
+
+            <v-main>
+                <v-container fluid>
+                    <!-- 视频容器 -->
+                    <div class="video-container">
+                        <!-- <video src="../static/other/home_back.7e0bd74c.mp4" autoplay loop muted></video> -->
+                        <video src="../static/other/home_back.7e0bd74c.mp4" autoplay loop muted></video>
+                        <!-- 公司名称 -->
+                        <div class="company-name">
+                            <h1 class="display-3 text-center  mb-4 font-weight-medium" style="cursor: pointer;">心聆守护</h1>
+                            <span>个性化的心理咨询大模型</span>
+                            <!-- 一键体验按钮 -->
+                        
+                            <v-btn  class="transparent-btn indigo lighten-1 white--text " style="font-size: 1.5rem;cursor: pointer;"
+                                @click="startExperience">立即体验</v-btn>
+                            </div>
+                    </div>
+
+
+                </v-container>
+            </v-main>
+            <v-footer dark padless style="width: 100%;">
+                <v-card flat tile class="indigo lighten-1 white--text text-center" style="width: 100%;">
+                    <v-card-text>
+                        <v-btn v-for="icon in icons" :key="icon" class="mx-4 white--text" icon>
+                            <v-icon size="24px">{{ icon }}</v-icon>
+                        </v-btn>
+                    </v-card-text>
+
+                    <v-card-text class="white--text pt-0">
+                        <h2 class="headline">关于我们 - 心聆守护</h2>
+                        <p>我们致力于提供最优质的心理健康服务，帮助用户更好地管理情绪、缓解压力，实现心理健康与幸福。</p>
+                    </v-card-text>
+
+                    <v-divider></v-divider>
+
+                    <v-card-text class="white--text">
+                        {{ new Date().getFullYear() }} — <strong>心聆守护</strong>
+                    </v-card-text>
+                </v-card>
+            </v-footer>
+        </v-app>
+    </div>
+    <style>
+        /* 添加自定义样式 */
+        .transparent-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            /* 确保在其他内容之上 */
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+            /* 添加过渡效果 */
+        }
+
+        .white-background {
+            background-color: white !important;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .video-container video {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .company-name {
+            position: absolute;
+            display: flex;
+            align-items: baseline;
+            top: 50%;
+            left: 30%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            flex-direction: column;
+            padding: 20px;
+        }
+    </style>
+    <!-- 引入 Vue 和 Vuetify 的 JS -->
+    <script src="js/vue.js"></script>
+    <script src="js/vuetify.js"></script>
+
+    <script>
+        window.addEventListener('scroll', function () {
+            var topBar = document.getElementById('top-bar');
+            var videoContainer = document.querySelector('.video-container');
+            var threshold = videoContainer.offsetHeight;
+
+            if (window.scrollY > threshold) {
+                topBar.classList.add('white-background');
+            } else {
+                topBar.classList.remove('white-background');
+            }
+        });
+    </script>
+    <script>
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify({
+                icons: {
+                    iconfont: 'mdi', // 默认图标集
+                },
+            }),
+            data: {
+                projectData: [100, 150, 200, 250, 300, 350, 400],
+                gradient: ['#ff5722', '#3f51b5'],
+                smooth: true,
+                padding: 16,
+                lineWidth: 3,
+                lineCap: 'round',
+                gradientDirection: 'right',
+                fill: true,
+                type: 'line',
+                autoLineWidth: false,
+                // 添加更多页面的链接
+                morePages: [
+                    { title: '关于我们', route: '/about' },
+                    { title: '联系我们', route: '/contact' }
+                    // 添加更多页面链接
+                ]
+
+            },
+
+            methods: {
+                goToPage(route) {
+                    // 在新页面打开链接
+                    window.open(route, '_blank');
+
+                },
+                startExperience() {
+                    // 点击一键体验按钮的操作
+                    window.open('/mind/views/chat.html', '_blank');
+                }
+            }
+        })
+    </script>
+
+</body>
+
+</html>
