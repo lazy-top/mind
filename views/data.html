@@ -84,15 +84,149 @@
 					<v-tabs-items v-model="tab">
 						<v-tab-item value="chat">
 							<!-- 情绪变化趋势图 -->
-							<v-img src="../img/chat.jpg" alt="Chat"></v-img>
+							<v-container  fluid>
+								<v-row>
+									<v-col cols="3">
+										<v-tabs v-model="emotionalStateTab" vertical grow>
+											<v-tab>
+												<v-icon>mdi-calendar-day</v-icon>
+												<span>一天内</span>
+											</v-tab>
+											<v-tab>
+												<v-icon>mdi-calendar-week</v-icon>
+												<span>一周内</span>
+											</v-tab>
+											<v-tab>
+												<v-icon>mdi-calendar-month</v-icon>
+												<span>一月内</span>
+											</v-tab>
+										</v-tabs>
+									</v-col>
+									<v-col cols="9">
+										<v-tabs-items v-model="emotionalStateTab">
+											<v-tab-item>
+												<div>
+													<h3 class="text-center">一天内情绪变化趋势</h3>
+													<v-divider class="my-4"></v-divider>
+													<p>根据用户一天内的情绪记录，以下是情绪变化趋势的图表：</p>
+													<!-- 插入一天内情绪变化趋势图表的代码 -->
+													<p class="text--secondary mt-6">请注意观察情绪在一天中不同时间段的变化情况。</p>
+												</div>
+											</v-tab-item>
+											<v-tab-item>
+												<div>
+													<h3 class="text-center">一周内情绪变化趋势</h3>
+													<v-divider class="my-4"></v-divider>
+													<p>根据用户一周内的情绪记录，以下是情绪变化趋势的图表：</p>
+													<!-- 插入一周内情绪变化趋势图表的代码 -->
+													<p class="text--secondary mt-6">请注意观察情绪在一周中不同日期的变化情况。</p>
+												</div>
+											</v-tab-item>
+											<v-tab-item>
+												<div>
+													<h3 class="text-center">一月内情绪变化趋势</h3>
+													<v-divider class="my-4"></v-divider>
+													<p>根据用户一个月内的情绪记录，以下是情绪变化趋势的图表：</p>
+													<!-- 插入一月内情绪变化趋势图表的代码 -->
+													<p class="text--secondary mt-6">请注意观察情绪在一个月中不同日期的变化情况。</p>
+												</div>
+											</v-tab-item>
+										</v-tabs-items>
+									</v-col>
+								</v-row>
+							</v-container>
 						</v-tab-item>
 						<v-tab-item value="database">
-							<!-- 认知偏向分析图 -->
-							<v-img src="../img/database.jpg" alt="Database"></v-img>
+			 <v-container fluid>
+			    <!-- 认知偏向分析标题 -->
+			    <v-row justify="center" class="mb-4">
+			      <v-col cols="12">
+			        <h2 class="text-center">认知偏向分析</h2>
+			        <v-divider class="my-4"></v-divider>
+			      </v-col>
+			    </v-row>
+			
+			    <!-- 认知评估工具部分 -->
+			    <v-row justify="center" class="mb-6">
+			      <v-col cols="12" md="8">
+			        <h3 class="mb-2">认知评估工具</h3>
+			        <p>
+			          通过认知评估工具或心理测量问卷，了解用户的认知倾向，例如是否存在负向思维、过度一般化、放大否定等认知偏向。
+			        </p>
+			        <!-- 在这里插入认知评估工具的内容，可以是问卷链接或其他形式 -->
+			
+			        <!-- 假设这里插入了一个认知评估工具的问卷链接 -->
+			        <v-btn color="primary" href="#" target="_blank">开始认知评估</v-btn>
+			      </v-col>
+			    </v-row>
+			
+			    <!-- 分析认知偏向与心理健康的关系部分 -->
+			    <v-row justify="center" class="mb-6">
+			      <v-col cols="12" md="8">
+			        <h3 class="mb-2">认知偏向与心理健康的关系</h3>
+			        <p>
+			          分析认知偏向与用户的情绪状态、行为反应和生活满意度之间的关系，探讨认知偏向对心理健康的影响。
+			        </p>
+			        <!-- 在这里插入对认知偏向与心理健康关系的分析内容 -->
+			      </v-col>
+			    </v-row>
+			
+			    <!-- 制定认知重建计划部分 -->
+			    <v-row justify="center">
+			      <v-col cols="12" md="8">
+			        <h3 class="mb-2">制定认知重建计划</h3>
+			        <p>
+			          基于认知偏向分析结果，制定个性化的认知疗法或认知重建计划，帮助用户改变不健康的认知模式，提升心理健康水平。
+			        </p>
+			        <!-- 在这里插入制定认知重建计划的内容 -->
+			      </v-col>
+			    </v-row>
+			  </v-container>
 						</v-tab-item>
 						<v-tab-item value="warning">
 							<!-- 应对策略评估图 -->
-							<v-img src="../img/warning.jpg" alt="Warning"></v-img>
+					  <v-container fluid>
+					    <!-- 应对策略评估标题 -->
+					    <v-row justify="center" class="mb-4">
+					      <v-col cols="12">
+					        <h2 class="text-center">应对策略评估</h2>
+					        <v-divider class="my-4"></v-divider>
+					      </v-col>
+					    </v-row>
+					
+					    <!-- 评估用户应对策略部分 -->
+					    <v-row justify="center" class="mb-6">
+					      <v-col cols="12" md="8">
+					        <h3 class="mb-2">评估用户应对策略</h3>
+					        <p>
+					          评估用户面对压力、挑战或负面情绪时的应对策略，包括情绪调节策略、问题解决策略、逃避或回避策略等。
+					        </p>
+					        <!-- 在这里插入评估用户应对策略的具体内容 -->
+					      </v-col>
+					    </v-row>
+					
+					    <!-- 分析应对策略的有效性和健康性部分 -->
+					    <v-row justify="center" class="mb-6">
+					      <v-col cols="12" md="8">
+					        <h3 class="mb-2">分析应对策略的有效性和健康性</h3>
+					        <p>
+					          分析用户应对策略的有效性和健康性，是否有助于缓解压力、提升情绪状态和改善心理健康。
+					        </p>
+					        <!-- 在这里插入分析应对策略的有效性和健康性的具体内容 -->
+					      </v-col>
+					    </v-row>
+					
+					    <!-- 提供个性化的心理辅导或应对技巧培训部分 -->
+					    <v-row justify="center">
+					      <v-col cols="12" md="8">
+					        <h3 class="mb-2">提供个性化的心理辅导或应对技巧培训</h3>
+					        <p>
+					          基于应对策略评估结果，提供个性化的心理辅导或应对技巧培训，帮助用户学会更健康、更有效的应对方式，增强心理韧性。
+					        </p>
+					        <!-- 在这里插入提供个性化心理辅导或应对技巧培训的具体内容 -->
+					      </v-col>
+					    </v-row>
+					  </v-container>
 						</v-tab-item>
 					</v-tabs-items>
 
@@ -117,6 +251,8 @@
 						drawer: true,
 						darkMode: false,
 						language: true, // 添加 language 属性
+						tab: 0,
+						emotionalStateTab: 0,
 					}
 
 				},

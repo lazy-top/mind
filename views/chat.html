@@ -406,9 +406,9 @@
 								if (data.code == 200) {
 									data = data.data
 									this.setCookie("isAuthenticated", true, 1);
-									this.setCookie("user_id", data.id);
+									this.setCookie("user_id", data.id,1);
 									this.userId = data.id
-									this.setCookie("username", data.username)
+									this.setCookie("username", data.username,1)
 									this.username = data.username;
 									this.loginDialog = false;
 									// 清空登录表单字段

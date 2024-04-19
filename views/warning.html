@@ -38,31 +38,37 @@
 					</v-btn>
 				</v-system-bar>
 
+				<v-navigation-drawer v-model="drawer" app width="300">
 
-				<v-navigation-drawer v-model="drawer" app absolute mini-variant>
-					<v-avatar class="d-block text-center mx-auto mt-4" size="36">
-						<v-img src="../img/a-lovely-human-being.png" alt="Image description"></v-img>
-					</v-avatar>
+					<v-navigation-drawer v-model="drawer" absolute mini-variant>
+						<v-avatar class="d-block text-center mx-auto mt-4" size="36">
+							<v-img src="../img/a-lovely-human-being.png" alt="Image description"></v-img>
+						</v-avatar>
 
-					<v-divider class="mx-3 my-5"></v-divider>
-
-
-					<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
-						@click="topage('/mind/views/chat.html')">
-						<v-icon>mdi-chat</v-icon>
-					</v-btn>
+						<v-divider class="mx-3 my-5"></v-divider>
 
 
-					<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
-						@click="topage('/mind/views/data.html')">
-						<v-icon>mdi-database</v-icon>
-					</v-btn>
+						<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
+							@click="topage('/mind/views/chat.html')">
+							<v-icon>mdi-chat</v-icon>
+						</v-btn>
 
-					<v-btn icon size="28" class="d-block text-center mx-auto mb-9" @click="topage('')">
-						<v-icon>mdi-alert</v-icon>
-					</v-btn>
+
+						<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
+							@click="topage('/mind/views/data.html')">
+							<v-icon>mdi-database</v-icon>
+						</v-btn>
+
+						<v-btn icon size="28" class="d-block text-center mx-auto mb-9" @click="topage('')">
+							<v-icon>mdi-alert</v-icon>
+						</v-btn>
+					</v-navigation-drawer>
+
+
+
+
+
 				</v-navigation-drawer>
-
 				<v-main>
 					<v-list>
 						<v-list-item v-for="(item, index) in warningList" :key="index">
