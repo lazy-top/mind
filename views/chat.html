@@ -145,9 +145,9 @@
 					<v-toolbar-title>{{ chatTitle }}</v-toolbar-title>
 					<v-spacer></v-spacer>
 
-					<v-responsive max-width="156">
+					<!-- 					<v-responsive max-width="156">
 						<v-text-field dense flat hide-details rounded solo-inverted></v-text-field>
-					</v-responsive>
+					</v-responsive> -->
 				</v-app-bar>
 
 				<v-navigation-drawer v-model="drawer" app width="300">
@@ -158,23 +158,36 @@
 
 						<v-divider class="mx-3 my-5"></v-divider>
 
-
 						<v-btn icon size="28" class="d-block text-center mx-auto mb-9" @click="topage('')">
-							<v-icon>mdi-chat</v-icon>
+							<v-tooltip bottom>
+								<template v-slot:activator="{ on }">
+									<v-icon v-on="on">mdi-chat</v-icon>
+								</template>
+								<span>聊天</span>
+							</v-tooltip>
 						</v-btn>
-
 
 						<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
 							@click="topage('/mind/views/data.html')">
-							<v-icon>mdi-database</v-icon>
+							<v-tooltip bottom>
+								<template v-slot:activator="{ on }">
+									<v-icon v-on="on">mdi-database</v-icon>
+								</template>
+								<span>数据</span>
+							</v-tooltip>
 						</v-btn>
 
 						<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
 							@click="topage('/mind/views/warning.html')">
-							<v-icon>mdi-alert</v-icon>
+							<v-tooltip bottom>
+								<template v-slot:activator="{ on }">
+									<v-icon v-on="on">mdi-alert</v-icon>
+								</template>
+								<span>警告</span>
+							</v-tooltip>
 						</v-btn>
-
 					</v-navigation-drawer>
+
 
 
 
@@ -208,8 +221,10 @@
 
 				<v-main>
 					<!--  -->
+
 					<!-- 消息列表 -->
 					<v-container id="message-list" style="padding-bottom: 60px;overflow-y: auto;">
+
 						<v-row v-for="(message, index) in messages" :key="index">
 							<v-col cols="auto">
 								<v-avatar size="40">
@@ -221,6 +236,9 @@
 								<div>
 									<span style="font-weight: bold;">{{ message.sender === 'robot' ? '小海' :
 					                                                    '你' }}</span>
+									<!-- 如果消息为 "生产中..."，显示加载中的进度圆 -->
+									<v-progress-circular v-if="message.content === '思考中...'" indeterminate
+										color="primary" size="16"></v-progress-circular>
 								</div>
 								<div>
 									<span>{{ message.content }}</span>
@@ -228,11 +246,12 @@
 							</v-col>
 						</v-row>
 					</v-container>
+
 				</v-main>
 
 				<v-footer app color="white" height="72" inset>
 					<v-text-field v-model='newMessage' background-color="grey lighten-3" dense flat hide-details rounded
-						solo>
+						solo placeholder="分享今天的心情吧">
 						<template v-slot:append>
 							<v-btn icon @click="sendMessage">
 								<v-icon>mdi-arrow-up</v-icon>
@@ -371,6 +390,9 @@
 
 
 								})
+
+							// axios.get(this.url+"/message/get_message").then(response=>{
+							// })
 						}
 					},
 					showSettingsDialog() {
@@ -406,11 +428,12 @@
 								if (data.code == 200) {
 									data = data.data
 									this.setCookie("isAuthenticated", true, 1);
-									this.setCookie("user_id", data.id,1);
+									this.setCookie("user_id", data.id, 1);
 									this.userId = data.id
-									this.setCookie("username", data.username,1)
+									this.setCookie("username", data.username, 1)
 									this.username = data.username;
 									this.loginDialog = false;
+									this.checkAuthentication();
 									// 清空登录表单字段
 									this.password = '';
 									// 
@@ -549,8 +572,55 @@
 						})
 						this.messages.push({
 							sender: 'robot',
-							content: "生成中..."
+							content: "思考中..."
 						})
+						axios.get(this.url + '/assistant/ai/choice?message=' + this.newMessage).then(response => {
+							console.log(response.data.assistant)
+							data = response.data.assistant
+							switch (data) {
+								case "选项A":
+									this.messages[this.messages.length - 1].content = "初始化心理助手..."
+									break;
+								case "选项B":
+									this.messages[this.messages.length - 1].content = "查询心理学知识库中..."
+									break;
+								case "选项C":
+									this.messages[this.messages.length - 1].content = "检测到危险言论!"
+									this.showToast = true
+									this.errorMessage = "检测到你有危险言论，已经发生消息到紧急联系人"
+									break;
+								default:
+									this.messages[this.messages.length - 1].content = "生成中..."
+							}
+
+
+
+						})
+						// axios.post(this.url + '/assistant/ai/chat', {
+						// 		assistant_id: this.selectId,
+						// 		message: this.newMessage
+						// 	}, {
+						// 		headers: {
+						// 			'Content-Type': 'application/x-www-form-urlencoded'
+						// 		}
+						// 	})
+						// 	.then(response => {
+						// 		console.log(response.data)
+						// 		let msg = []
+						// 		data = response.data
+						// 		for (const item of data) {
+						// 			msg.push(item.result.output.content)
+						// 			this.messages[this.messages.length - 1].content = msg
+						// 		}
+						// 		// 获取最新的一条robot
+
+
+						// 	})
+						// 	.catch(error => {
+						// 		console.error('Error:', error);
+						// 	});
+						// 初始化一个空数组来存储接收到的消息
+
 						this.newMessage = ""
 					},
 					// 热键处理函数
@@ -567,6 +637,53 @@
 
 						}
 					},
+					getStreamData(url) {
+						fetch(url)
+							.then(response => {
+								const reader = response.body.getReader();
+								const stream = new ReadableStream({
+									start(controller) {
+										function push() {
+											reader.read().then(({
+												done,
+												value
+											}) => {
+												if (done) {
+													controller.close();
+													return;
+												}
+												controller.enqueue(value);
+												push();
+											});
+										}
+										push();
+									}
+								});
+								return new Response(stream);
+							})
+							.then(response => {
+								const reader = response.body.getReader();
+								const decoder = new TextDecoder();
+
+								function read() {
+									reader.read().then(({
+										done,
+										value
+									}) => {
+										if (done) return;
+										console.log(decoder.decode(value, {
+											stream: true
+										}));
+										read();
+									});
+								}
+								read();
+							})
+							.catch(error => {
+								console.error('Error fetching data:', error);
+							});
+
+					}
 				},
 				beforeDestroy() {
 					// 在组件销毁前移除热键监听器
