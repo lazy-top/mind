@@ -57,7 +57,8 @@
 
 					<v-divider class="mx-3 my-5"></v-divider>
 
-					<v-btn icon size="28" class="d-block text-center mx-auto mb-9" @click="topage('/mind/views/chat.html')">
+					<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
+						@click="topage('/mind/views/chat.html')">
 						<v-tooltip bottom>
 							<template v-slot:activator="{ on }">
 								<v-icon v-on="on">mdi-chat</v-icon>
@@ -76,8 +77,7 @@
 						</v-tooltip>
 					</v-btn>
 
-					<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
-						@click="topage('')">
+					<v-btn icon size="28" class="d-block text-center mx-auto mb-9" @click="topage('')">
 						<v-tooltip bottom>
 							<template v-slot:activator="{ on }">
 								<v-icon v-on="on">mdi-alert</v-icon>
@@ -95,7 +95,7 @@
 								<div>
 									<span class="headline">紧急联系人信息</span>
 								</div>
-								<div >
+								<div>
 									<v-text-field v-model="contact.name" label="姓名" outlined
 										prepend-inner-icon="mdi-account"></v-text-field>
 									<v-text-field v-model="contact.relationship" label="关系" outlined
@@ -104,7 +104,7 @@
 										prepend-inner-icon="mdi-phone"></v-text-field>
 									<v-text-field v-model="contact.email" label="邮箱" outlined
 										prepend-inner-icon="mdi-email"></v-text-field>
-									<v-btn @click="openDialog"  color="primary">修改</v-btn>
+									<v-btn @click="openDialog" color="primary">修改</v-btn>
 								</div>
 
 
@@ -191,7 +191,7 @@
 						user_id: 0,
 						have: false,
 						contact: {
-							user_id:0,
+							user_id: 0,
 							name: "",
 							relationship: "",
 							phone: "",
@@ -285,15 +285,19 @@
 					submitForm() {
 						// 关闭确认对话框
 						this.dialog = false;
-						
+
 						// 在这里发送表单数据到服务器
-						let url=this.url+"/contact/create"
-						if(this.have){
-							url=this.url+"/contact/update"
-						
+						let url = this.url + "/contact/create"
+						if (this.have) {
+							url = this.url + "/contact/update"
+
 						}
-						console.log(this.contact)
-						axios.post(url, {contact:this.contact})
+						axios.post(url, {
+									user_id: this.contact.user_id,
+									name: this.contact.name,
+									phone: this.contact.phone,
+									email:this.contact.email,
+							})
 							.then(response => {
 								// 处理成功响应
 								console.log(response.data);
@@ -313,6 +317,7 @@
 								}
 							})
 							.then(response => {
+								console.log(this.contact)
 								// 处理成功响应
 								data = response.data
 								if (data.data != null) {
@@ -327,7 +332,27 @@
 							});
 					},
 					getWarningList() {
+						// 在这里发送表单数据到服务器
+						axios.post(this.url + '/warning/me_detail', {
+								user_id: this.user_id
+							}, {
+								headers: {
+									'Content-Type': 'application/x-www-form-urlencoded'
+								}
+							})
+							.then(response => {
+								// 处理成功响应
+								data = response.data
+								if (data.data != null) {
+									this.have == true
+								}
 
+								console.log(response.data);
+							})
+							.catch(error => {
+								// 处理错误响应
+								console.error(error);
+							});
 					}
 
 				},
@@ -336,7 +361,7 @@
 				},
 				mounted() {
 					this.user_id = this.getCookie("user_id");
-					this.contact.user_id=Number.parseInt( this.user_id);
+					this.contact.user_id = Number.parseInt(this.user_id);
 					this.getContact();
 					this.getWarningList();
 
