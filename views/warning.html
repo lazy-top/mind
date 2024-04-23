@@ -116,15 +116,24 @@
 								<div>
 									<span class="headline">警告列表</span>
 								</div>
-								<v-list style="max-height: 400px; overflow-y: auto;">
-									<v-list-item v-for="(item, index) in warningList" :key="index">
-										<v-list-item-content>
-											<v-list-item-title>{{ item.title }}</v-list-item-title>
-											<v-list-item-subtitle>{{ item.time }}</v-list-item-subtitle>
-										</v-list-item-content>
-									</v-list-item>
-								</v-list>
+								<!-- 使用 v-if 条件渲染来判断警告列表是否为空 -->
+								<template v-if="warningList.length > 0">
+									<!-- 如果警告列表不为空，则渲染警告列表 -->
+									<v-list style="max-height: 400px; overflow-y: auto;">
+										<v-list-item v-for="(item, index) in warningList" :key="index">
+											<v-list-item-content>
+												<v-list-item-title>{{ item.title }}</v-list-item-title>
+												<v-list-item-subtitle>{{ item.time }}</v-list-item-subtitle>
+											</v-list-item-content>
+										</v-list-item>
+									</v-list>
+								</template>
+								<template v-else>
+									<!-- 如果警告列表为空，则显示提示信息 -->
+									<p class="text-center">暂时无警告</p>
+								</template>
 							</v-col>
+
 						</v-row>
 					</v-container>
 
@@ -293,10 +302,11 @@
 
 						}
 						axios.post(url, {
-									user_id: this.contact.user_id,
-									name: this.contact.name,
-									phone: this.contact.phone,
-									email:this.contact.email,
+								user_id: this.contact.user_id,
+								name: this.contact.name,
+								phone: this.contact.phone,
+								email: this.contact.email,
+								relationship:this.contact.relationship
 							})
 							.then(response => {
 								// 处理成功响应
@@ -321,8 +331,13 @@
 								// 处理成功响应
 								data = response.data
 								if (data.data != null) {
-									this.have == true
+									this.have = true
+									this.contact.email = data.data.email
+									this.contact.name = data.data.name
+									this.contact.phone = data.data.phone
+									this.contact.relationship = data.data.relationship
 								}
+
 
 								console.log(response.data);
 							})
@@ -345,6 +360,7 @@
 								data = response.data
 								if (data.data != null) {
 									this.have == true
+									this.warningList = data.data
 								}
 
 								console.log(response.data);

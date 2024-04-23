@@ -145,9 +145,8 @@
 					<v-toolbar-title>{{ chatTitle }}</v-toolbar-title>
 					<v-spacer></v-spacer>
 
-					<!-- 					<v-responsive max-width="156">
-						<v-text-field dense flat hide-details rounded solo-inverted></v-text-field>
-					</v-responsive> -->
+					<!-- 右侧图标按钮 -->
+					<v-icon @click="toggleMood">mdi-emoticon-outline</v-icon>
 				</v-app-bar>
 
 				<v-navigation-drawer v-model="drawer" app width="300">
@@ -273,11 +272,6 @@
 				/* 淡灰色背景 */
 			}
 
-			.selected-item {
-				background-color: #EDEDED;
-				/* 修改选中后的背景色 */
-				/* 其他样式修改 */
-			}
 		</style>
 
 		<script>
@@ -314,7 +308,10 @@
 							function: '',
 							personalInfo: ''
 						},
-						messages: [],
+						messages: [{
+							sender: 'robot',
+							content: '欢迎来到心聆守护， 让我们一起来进行心理探讨和交流吧。 我可以为您查找心理知识、深入分析心理问题和为你提供安全保护。🤗🤗🤗 '
+						}],
 						loginDialog: false,
 						username: "",
 						password: "",
@@ -325,6 +322,7 @@
 						confirmPassword: "",
 						newEmail: "",
 						selectId: 0,
+						mood: 'mdi-emoticon-happy-outline', // 默认情感图标
 
 					};
 				},
@@ -501,7 +499,16 @@
 					toggleLoginDialog() {
 						this.loginDialog = !this.loginDialog;
 					},
-
+					toggleMood() {
+						// 根据当前心情状态切换图标
+						if (this.mood === 'mdi-emoticon-happy-outline') {
+							this.mood = 'mdi-emoticon-neutral-outline'; // 切换到一般心情图标
+						} else if (this.mood === 'mdi-emoticon-neutral-outline') {
+							this.mood = 'mdi-emoticon-sad-outline'; // 切换到坏心情图标
+						} else {
+							this.mood = 'mdi-emoticon-happy-outline'; // 切换到好心情图标
+						}
+					},
 					topage(route) {
 						window.open(route, "_self")
 
@@ -566,63 +573,96 @@
 
 					},
 					sendMessage() {
+						// 在发送消息后立即将新消息添加到消息列表中
 						this.messages.push({
 							sender: 'human',
 							content: this.newMessage
-						})
+						});
+
+						// 在发送消息后显示“思考中”消息
 						this.messages.push({
 							sender: 'robot',
-							content: "思考中..."
+							content: '思考中...'
+						});
+						axios.post(this.url+'/message/insert_message',{
+							user_id:this.userId,
+							assistant_id:this.selectId,
+							content:this.newMessage
 						})
-						axios.get(this.url + '/assistant/ai/choice?message=' + this.newMessage).then(response => {
-							console.log(response.data.assistant)
-							data = response.data.assistant
-							switch (data) {
-								case "选项A":
-									this.messages[this.messages.length - 1].content = "初始化心理助手..."
-									break;
-								case "选项B":
-									this.messages[this.messages.length - 1].content = "查询心理学知识库中..."
-									break;
-								case "选项C":
-									this.messages[this.messages.length - 1].content = "检测到危险言论!"
-									this.showToast = true
-									this.errorMessage = "检测到你有危险言论，已经发生消息到紧急联系人"
-									break;
-								default:
-									this.messages[this.messages.length - 1].content = "生成中..."
+
+						// 发送消息给后端并立即更新用户界面
+						axios.post(this.url + '/assistant/ai/choice', {
+							message: this.newMessage
+						}, {
+							headers: {
+								'Content-Type': 'application/x-www-form-urlencoded'
 							}
+						}).then(response => {
+							console.log(response.data.assistant);
+							const data = response.data.assistant;
+							// 根据响应更新用户界面
+							this.updateUI(data);
+						}).catch(error => {
+							console.error('Error:', error);
+						});
 
-
-
-						})
-						// axios.post(this.url + '/assistant/ai/chat', {
-						// 		assistant_id: this.selectId,
-						// 		message: this.newMessage
-						// 	}, {
-						// 		headers: {
-						// 			'Content-Type': 'application/x-www-form-urlencoded'
-						// 		}
-						// 	})
-						// 	.then(response => {
-						// 		console.log(response.data)
-						// 		let msg = []
-						// 		data = response.data
-						// 		for (const item of data) {
-						// 			msg.push(item.result.output.content)
-						// 			this.messages[this.messages.length - 1].content = msg
-						// 		}
-						// 		// 获取最新的一条robot
-
-
-						// 	})
-						// 	.catch(error => {
-						// 		console.error('Error:', error);
-						// 	});
-						// 初始化一个空数组来存储接收到的消息
-
-						this.newMessage = ""
+						// 清空新消息输入框
+						this.newMessage = "";
 					},
+
+					updateUI(data) {
+						// 根据响应更新消息列表中的内容
+						switch (data) {
+							case "选项A":
+								this.messages[this.messages.length - 1].content = "初始化心理助手...";
+								axios.post(this.url + '/assistant/ai/chat', {
+									message: this.newMessage,
+									assistant_id: this.selectId
+								}, {
+									headers: {
+										'Content-Type': 'application/x-www-form-urlencoded'
+									}
+								}).then(response => {
+									console.log(response);
+									// 更新消息列表中的内容
+									this.messages[this.messages.length - 1].content = response;
+								});
+								break;
+							case "选项B":
+								this.messages[this.messages.length - 1].content = "查询心理学知识库中...";
+								axios.post(this.url + '/assistant/ai/chat', {
+									message: this.newMessage,
+									assistant_id: this.selectId
+								}, {
+									headers: {
+										'Content-Type': 'application/x-www-form-urlencoded'
+									}
+								}).then(response => {
+									console.log(response);
+									// 更新消息列表中的内容
+									this.messages[this.messages.length - 1].content = response;
+								});
+								break;
+							case "选项C":
+								this.messages[this.messages.length - 1].content = "检测到危险言论!";
+								this.showToast = true;
+								this.errorMessage = "检测到你有危险言论，已经发生消息到紧急联系人";
+								break;
+							default:
+								this.messages[this.messages.length - 1].content = "生成中...";
+								axios.post(this.url + "/assistant/ai/Samplychat", {
+									message: this.newMessage,
+								}, {
+									headers: {
+										'Content-Type': 'application/x-www-form-urlencoded'
+									}
+								}).then(response => {
+									// 更新消息列表中的内容
+									this.messages[this.messages.length - 1].content = response;
+								});
+						}
+					},
+
 					// 热键处理函数
 					handleHotkey(event) {
 						// Enter：发送消息
