@@ -1,0 +1,22 @@
+.d-flex {
+    display: flex;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.justify-center {
+    justify-content: center;
+}
+.code {
+    position: relative;
+}
+.code-btn {
+    position: absolute;
+    right: 5%;
+    top: 20%;
+    color: #1976D2;
+    padding-left: 10px;
+    border-left: 2px solid rgb(189, 187, 187);
+}

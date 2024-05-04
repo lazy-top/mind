@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<!-- 引入 Vue 和 Vuetify 的 JS -->
+		<script src="../js/vue.js"></script>
+		<script src="../js/vuetify.js"></script>
+		<script src="../js/axios.min.js"></script>
+		<script src="../js/vue-router.global.js"></script>
+		<!-- 引入 Vuetify 的 CSS -->
+
+		<link href="../css/materialdesignicons.min.css" rel="stylesheet">
+		<link href="../css/vuetify.min.css" rel="stylesheet">
+		<link rel="stylesheet" href="../css/login.css">
+		<meta name="viewport"
+			content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+	</head>
+
+	<body>
+		<div id="app">
+
+			<v-app class="warm-gradient">
+				<v-container fluid>
+					<v-row align="center" justify="center">
+						<v-col cols="8" sm="6" md="4">
+							<v-card elevation="0">
+								<v-card-title class="text-center">
+									<h2 style="width: 100%;">登录</h2>
+								</v-card-title>
+								<v-card-text>
+									<v-form ref="loginForm" v-model="valid" lazy-validation>
+										<v-text-field label="用户名或者邮箱" required :rules="usernameRules"
+											v-model="credentials.username" outlined></v-text-field>
+										<v-text-field label="密码" type="password" required :rules="passwordRules"
+											v-model="credentials.password" outlined></v-text-field>
+
+										<div>
+											<v-form>
+
+												<div class="d-flex justify-space-between align-center">
+													<v-checkbox label="记住我" v-model="rememberMe"></v-checkbox>
+
+													<div>
+														<a href="../06_忘记密码/forget.html">忘记密码?</a>
+													</div>
+												</div>
+												<v-btn color="primary" :disabled="!valid" @click="submitLogin"
+													style=" width: 100%;">登录</v-btn>
+
+												<div style="display: flex;justify-content: space-between;">
+													<div>
+														没有账号?
+														<a href="../04_注册界面/register.html">立即注册</a>
+													</div>
+
+													<span>
+														登录即代表同意<a href="../15_用户协议/contract.html">心聆守护用户协议</a>和<a
+															href="../18_隐私政策/index.html">隐私政策</a>
+													</span>
+												</div>
+											</v-form>
+										</div>
+									</v-form>
+								</v-card-text>
+							</v-card>
+						</v-col>
+					</v-row>
+				</v-container>
+				<v-snackbar v-model="showToast" :timeout="2000" color="orange" :top="true" style="text-align: center;">
+					{{ errorMessage }}
+				</v-snackbar>
+			</v-app>
+		</div>
+
+	</body>
+
+	<script>
+		new Vue({
+			el: '#app',
+			vuetify: new Vuetify(),
+			data() {
+				return {
+					showToast: false,
+					errorMessage: '账号密码错误',
+					showRegister: false,
+					credentials: {
+						username: '',
+						password: ''
+					},
+					rememberMe: false,
+					valid: false,
+					usernameRules: [
+						v => !!v || '用户名不能为空',
+						// 
+
+					],
+					passwordRules: [
+						v => !!v || '密码不能为空',
+						// 可添加其他规则，如长度限制、特殊字符要求
+						v => /^[a-zA-Z0-9_-]{6,16}$/.test(v) || '密码格式不正确'
+					]
+				};
+			},
+			methods: {
+				// 在这里添加方法
+				submitLogin() {
+					if (this.$refs.loginForm.validate()) {
+						// 发送登录请求至后端 API，使用 this.credentials 作为请求数据
+						axios.post('/user/login', this.credentials)
+							.then(response => {
+								res = response.response.data;
+								// 处理登录成功逻辑，如保存 token、跳转至首页等
+								if (res.code == 200) {
+									// 登录成功，保存 token 到本地存储
+									localStorage.setItem('token', res.data.access_token);
+									// 跳转至首页
+									this.$router.push('/chat');
+								}
+							})
+							.catch(error => {
+								console.log(error);
+								// 获取error返回的response的数据
+								res = error.response.data;
+								// 使用vuetify的提示框,展示错误信息
+								this.errorMessage = res.msg;
+								this.showToast = true;
+							});
+					}
+				}
+			}
+		});
+	</script>
+
+</html>

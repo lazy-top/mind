@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<meta charset="UTF-8">
 		<!-- 引入 Vue 和 Vuetify 的 JS -->
 		<script src="../js/vue.js"></script>
 		<script src="../js/vuetify.js"></script>
@@ -75,6 +76,27 @@
 							<span>警告</span>
 						</v-tooltip>
 					</v-btn>
+					<!-- 添加 VR 图标按钮 -->
+					<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
+						@click="topage('/mind/views/vr.html')">
+						<v-tooltip bottom>
+							<template v-slot:activator="{ on }">
+								<v-icon v-on="on">mdi-eye</v-icon>
+							</template>
+							<span>VR</span>
+						</v-tooltip>
+					</v-btn>
+
+					<!-- 添加知识库图标按钮 -->
+					<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
+						@click="topage('/mind/views/knowledge.html')">
+						<v-tooltip bottom>
+							<template v-slot:activator="{ on }">
+								<v-icon v-on="on">mdi-book-open-page-variant</v-icon>
+							</template>
+							<span>知识库</span>
+						</v-tooltip>
+					</v-btn>
 				</v-navigation-drawer>
 
 				<v-main>
@@ -120,12 +142,14 @@
 					<v-row style="max-height: 300px; overflow-y: auto;">
 						<v-col cols="12">
 							<h3 class="text-center">历史消息</h3>
+							<p class="text-center">根据上下文历史消息进行综合评估</p>
 							<ul>
 								<!-- 历史消息的列表项 -->
-								<li>历史消息1</li>
-								<li>历史消息2</li>
-								<li>历史消息3</li>
+								<li v-for="(message, index) in displayedMessages" :key="message.content">
+									{{ message.content }} - {{ message.create_at }}
+								</li>
 								<!-- 添加更多历史消息 -->
+								<li v-if="showEllipsis" class="ellipsis">...</li>
 							</ul>
 						</v-col>
 					</v-row>
@@ -161,12 +185,25 @@
 						language: true, // 添加 language 属性
 						tab: 0,
 						emotionalStateTab: 0,
-						url:"http://127.0.0.1:8080/api"
+						url: "http://127.0.0.1:8080/api",
+						historyMessages: [],
+						maxDisplayedMessages: 5, // 最大显示的消息数量
+						emotions_analyze_data: [],
+						bias_scores_data: [],
+						strategy_scores_data: []
+
 
 					}
 
 				},
-
+				computed: {
+					displayedMessages() {
+						return this.historyMessages.slice(0, this.maxDisplayedMessages);
+					},
+					showEllipsis() {
+						return this.historyMessages.length > this.maxDisplayedMessages;
+					}
+				},
 				methods: {
 					mianTabChange() {
 
@@ -183,10 +220,157 @@
 							headers: {
 								'Content-Type': 'application/x-www-form-urlencoded'
 							}
-						}).then(response=>{
-							console.log(response.data)
+						}).then(response => {
+							data = response.data
+							this.historyMessages = data.data
 						})
 
+					},
+					get_echart_data() {
+						axios.post(this.url + '/data/bias_scores', {
+							user_id: this.user_id
+						}, {
+							headers: {
+								'Content-Type': 'application/x-www-form-urlencoded'
+							}
+						}).then(response => {
+							data = response.data
+							let jsonObj = JSON.parse(data.data);
+							// 提取对象中的所有值（数字）并放入数组
+							let numbersArray = Object.values(jsonObj);
+							this.bias_scores_data = numbersArray
+							console.log(numbersArray)
+							// 初始化认知偏向分析雷达图
+							var cognitiveBiasChart = echarts.init(document.getElementById('cognitiveBiasChart'));
+							var cognitiveBiasOption = {
+								title: {
+									text: '认知偏向分析'
+								},
+								tooltip: {},
+								radar: {
+									indicator: [{
+											name: '乐观',
+											max: 100
+										},
+										{
+											name: '积极',
+											max: 100
+										},
+										{
+											name: '自信',
+											max: 100
+										},
+										{
+											name: '消极',
+											max: 100
+										},
+										{
+											name: '焦虑',
+											max: 100
+										},
+										{
+											name: '抑郁',
+											max: 100
+										}
+									]
+								},
+								series: [{
+									type: 'radar',
+									data: [{
+										value: numbersArray,
+										name: '偏向分析'
+									}]
+								}]
+							};
+							cognitiveBiasChart.setOption(cognitiveBiasOption);
+
+						})
+						axios.post(this.url + '/data/strategy_scores', {
+							user_id: this.user_id
+						}, {
+							headers: {
+								'Content-Type': 'application/x-www-form-urlencoded'
+							}
+						}).then(response => {
+							data = response.data
+							
+							// 使用JSON.parse将字符串解析为对象
+							let jsonObj = JSON.parse(data.data);
+							
+							// 提取对象中的所有值（数字）并放入数组
+							let numbersArray = Object.values(jsonObj);
+							this.strategy_scores_data = numbersArray
+							console.log(numbersArray)
+							// 初始化应对策略评估统计对策分析图
+							var strategyAnalysisChart = echarts.init(document.getElementById('strategyAnalysisChart'));
+							var strategyAnalysisOption = {
+								title: {
+									text: '应对策略评估'
+								},
+								tooltip: {
+									trigger: 'axis'
+								},
+								xAxis: {
+									type: 'category',
+									data: ['认知能力', '情绪调节', '社交技能', '学习能力', '适应能力']
+								},
+								yAxis: {
+									type: 'value'
+								},
+								series: [{
+									data: numbersArray,
+									type: 'bar'
+								}]
+							};
+							strategyAnalysisChart.setOption(strategyAnalysisOption);
+
+						})
+						axios.post(this.url + '/data/emotions_analyze', {
+							user_id: this.user_id
+						}, {
+							headers: {
+								'Content-Type': 'application/x-www-form-urlencoded'
+							}
+						}).then(response => {
+							data = response.data
+							this.emotions_analyze_data = data.data
+							// 将字符串分割成由逗号分隔的部分
+							let str_parts = data.data.split(',');
+							
+							// 将每部分转换为数字，并过滤掉空字符串
+							let num_array = str_parts.map(part => {
+							    if (part) {
+							        return parseFloat(part);
+							    }
+							}).filter(num => !isNaN(num));
+
+							console.log(this.emotions_analyze_data)
+							// 此时num_array就是您想要的数字数组
+							console.log(num_array);
+							// 初始化情绪变化趋势折线图
+							var emotionTrendChart = echarts.init(document.getElementById('emotionTrendChart'));
+							var emotionTrendOption = {
+								title: {
+									text: '情绪变化趋势'
+								},
+								tooltip: {
+									trigger: 'axis'
+								},
+								xAxis: {
+									type: 'category',
+									data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] // 将英文星期名称改为中文
+								},
+								yAxis: {
+									type: 'value'
+								},
+								series: [{
+									data:num_array,
+									type: 'line'
+								}]
+							};
+							emotionTrendChart.setOption(emotionTrendOption);
+
+						})
 					},
 					topage(route) {
 						window.open(route, "_self")
@@ -231,96 +415,14 @@
 				mounted() {
 					this.user_id = this.getCookie("user_id");
 					this.getData()
-					// 初始化情绪变化趋势折线图
-					var emotionTrendChart = echarts.init(document.getElementById('emotionTrendChart'));
-					var emotionTrendOption = {
-						title: {
-							text: '情绪变化趋势'
-						},
-						tooltip: {
-							trigger: 'axis'
-						},
-						xAxis: {
-							type: 'category',
-							data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] // 将英文星期名称改为中文
-						},
-						yAxis: {
-							type: 'value'
-						},
-						series: [{
-							data: [120, 200, 150, 80, 70, 110, 130],
-							type: 'line'
-						}]
-					};
-					emotionTrendChart.setOption(emotionTrendOption);
+					this.get_echart_data()
 
 
-					// 初始化认知偏向分析雷达图
-					var cognitiveBiasChart = echarts.init(document.getElementById('cognitiveBiasChart'));
-					var cognitiveBiasOption = {
-						title: {
-							text: '认知偏向分析'
-						},
-						tooltip: {},
-						radar: {
-							indicator: [{
-									name: '乐观',
-									max: 100
-								},
-								{
-									name: '积极',
-									max: 100
-								},
-								{
-									name: '自信',
-									max: 100
-								},
-								{
-									name: '消极',
-									max: 100
-								},
-								{
-									name: '焦虑',
-									max: 100
-								},
-								{
-									name: '抑郁',
-									max: 100
-								}
-							]
-						},
-						series: [{
-							type: 'radar',
-							data: [{
-								value: [80, 90, 85, 85, 70, 75],
-								name: '偏向分析'
-							}]
-						}]
-					};
-					cognitiveBiasChart.setOption(cognitiveBiasOption);
 
-					// 初始化应对策略评估统计对策分析图
-					var strategyAnalysisChart = echarts.init(document.getElementById('strategyAnalysisChart'));
-					var strategyAnalysisOption = {
-						title: {
-							text: '应对策略评估'
-						},
-						tooltip: {
-							trigger: 'axis'
-						},
-						xAxis: {
-							type: 'category',
-							data: ['A', 'B', 'C', 'D', 'E']
-						},
-						yAxis: {
-							type: 'value'
-						},
-						series: [{
-							data: [120, 200, 150, 80, 70],
-							type: 'bar'
-						}]
-					};
-					strategyAnalysisChart.setOption(strategyAnalysisOption);
+
+
+
+					
 
 				}
 

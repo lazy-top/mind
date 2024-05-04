@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-
+ <meta charset="UTF-8">
 		<!-- 引入 Vue 和 Vuetify 的 JS -->
 		<script src="../js/vue.js"></script>
 		<script src="../js/vuetify.js"></script>
@@ -83,6 +83,26 @@
 								<v-icon v-on="on">mdi-alert</v-icon>
 							</template>
 							<span>警告</span>
+						</v-tooltip>
+					</v-btn>
+					<!-- 添加 VR 图标按钮 -->
+					<v-btn icon size="28" class="d-block text-center mx-auto mb-9" @click="topage('/mind/views/vr.html')">
+						<v-tooltip bottom>
+							<template v-slot:activator="{ on }">
+								<v-icon v-on="on">mdi-eye</v-icon>
+							</template>
+							<span>VR</span>
+						</v-tooltip>
+					</v-btn>
+					
+					<!-- 添加知识库图标按钮 -->
+					<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
+						@click="topage('/mind/views/knowledge.html')">
+						<v-tooltip bottom>
+							<template v-slot:activator="{ on }">
+								<v-icon v-on="on">mdi-book-open-page-variant</v-icon>
+							</template>
+							<span>知识库</span>
 						</v-tooltip>
 					</v-btn>
 				</v-navigation-drawer>

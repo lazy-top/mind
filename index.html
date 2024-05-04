@@ -3,7 +3,9 @@
 
 <head>
 	<!-- 引入 Vue 和 Vuetify 的 JS -->
+	 <meta charset="UTF-8">
 	<script src="js/vue.js"></script>
+	<title>心聆守护</title>
 	<script src="js/vuetify.js"></script>
     <!-- 引入 Vuetify 的 CSS -->
     <link href="css/materialdesignicons.min.css" rel="stylesheet">
@@ -24,8 +26,8 @@
                         <!-- 加上空隙 -->
 
                         <v-btn text @click="">首页</v-btn>
-                        <v-btn text @click="goToPage('/services')">功能介绍</v-btn>
-                        <v-btn text @click="goToPage('/Privacy_Policy')">隐私政策</v-btn>
+                        <v-btn text @click="goToPage('/mind/views/function.html')">功能介绍</v-btn>
+                        <v-btn text @click="goToPage('/mind/views/Privacy_Policy.html')">隐私政策</v-btn>
                         <v-menu offset-y>
                             <template v-slot:activator="{ on }">
                                 <v-btn text v-on="on">更多</v-btn>
@@ -55,7 +57,7 @@
                     <!-- 视频容器 -->
                     <div class="video-container">
                         <!-- <video src="../static/other/home_back.7e0bd74c.mp4" autoplay loop muted></video> -->
-                        <video src="../static/other/home_back.7e0bd74c.mp4" autoplay loop muted></video>
+                        <video src="./mp4/home_back.mp4" autoplay loop muted></video>
                         <!-- 公司名称 -->
                         <div class="company-name">
                             <h1 class="display-3 text-center  mb-4 font-weight-medium" style="cursor: pointer;">心聆守护</h1>

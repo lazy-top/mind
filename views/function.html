@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>个性化心理助手功能介绍</title>
+
+		<!-- Vue.js -->
+		<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+
+		<!-- Vuetify -->
+		<link href="https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css" rel="stylesheet">
+		<link href="https://unpkg.com/vuetify@2.6.4/dist/vuetify.min.css" rel="stylesheet">
+		<script src="https://unpkg.com/vuetify@2.6.4/dist/vuetify.min.js"></script>
+
+		<!-- Material Icons -->
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+
+	</head>
+	<body>
+		<!-- Your Vue app will mount here -->
+		<div id="app">
+			<div class="introduction-page">
+				<v-app-bar dark color="white">
+					<v-toolbar-title class="text-xs-center">
+						介绍页面
+					</v-toolbar-title>
+				</v-app-bar>
+
+				<v-content>
+					<div class="hero-section">
+						<v-container class="text-xs-center">
+							<h1 class="display-1 mb-4">欢迎来到我的介绍页面</h1>
+							<p class="lead-text">这里是介绍我的信息和技能的地方</p>
+
+							<v-btn :to="/" class="mt-4">了解更多</v-btn>
+						</v-container>
+					</div>
+
+					<div class="about-section">
+						<v-container>
+							<h2 class="title">关于我</h2>
+							<p class="text">我是一名前端开发人员，拥有多年的 Vuetify 和 Vue.js 开发经验。我对构建现代、响应式和用户友好的 Web 应用程序充满热情。</p>
+
+							<div class="skills-section">
+								<h3 class="subtitle">我的技能</h3>
+								<ul class="skills-list">
+									<li>Vuetify</li>
+									<li>Vue.js</li>
+									<li>HTML/CSS</li>
+									<li>JavaScript</li>
+								</ul>
+							</div>
+						</v-container>
+					</div>
+
+					<div class="contact-section">
+						<v-container>
+							<h2 class="title">联系我</h2>
+							<p class="text">如果您有任何问题或想合作，请随时与我联系。</p>
+
+							<ul class="contact-list">
+								<li>
+									<v-icon class="mr-2">mdi-email</v-icon>
+									<a href="mailto:youremail@example.com">youremail@example.com</a>
+								</li>
+								<li>
+									<v-icon class="mr-2">mdi-github</v-icon>
+									<a href="https://github.com/yourusername">yourusername</a>
+								</li>
+								<li>
+									<v-icon class="mr-2">mdi-linkedin</v-icon>
+									<a href="https://www.linkedin.com/in/yourusername">yourusername</a>
+								</li>
+							</ul>
+						</v-container>
+					</div>
+				</v-content>
+			</div>
+		</div>
+		<style>
+			.introduction-page {
+				background-color: #fff;
+				font-family: sans-serif;
+			}
+
+			.hero-section {
+				background-color: #f5f5f5;
+				padding: 80px 0;
+			}
+
+			.about-section {
+				padding: 40px 0;
+			}
+
+			.skills-list {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+
+			.skills-list li {
+				display: inline-block;
+				margin-right: 20px;
+			}
+
+			.contact-section {
+				padding: 40px 0;
+			}
+
+			.contact-list {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+
+			.contact-list li {
+				margin-bottom: 10px;
+			}
+		</style>
+
+	</body>
+</html>
