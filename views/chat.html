@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>聊天</title>
+		<title>欢迎来到心聆守护</title>
 		<!-- 引入 Vue 和 Vuetify 的 JS -->
 		<script src="../js/vue.js"></script>
 		<script src="../js/vuetify.js"></script>
@@ -213,7 +213,7 @@
 
 
 
-					<v-btn color="white" width="100%" elevation="0" class="mx-3 my-3" @click="openAssistantDialog">
+					<v-btn width="100%" elevation="0"  class="mx-3 my-3" @click="openAssistantDialog" block>
 						<v-icon left>mdi-robot</v-icon>
 						创建新助手
 
@@ -262,29 +262,94 @@
 
 				</v-main>
 
-				<v-footer app color="white" height="72" inset>
-					<v-text-field v-model='newMessage' background-color="grey lighten-3" dense flat hide-details rounded
-						solo placeholder="分享今天的心情吧">
-						<template v-slot:append>
-							<v-btn icon @click="sendMessage">
-								<v-icon>mdi-arrow-up</v-icon>
-							</v-btn>
-						</template>
-					</v-text-field>
-				</v-footer>
+			<v-footer app  height="72" inset>
+				<v-text-field v-model='newMessage' background-color="lighten-3" dense flat hide-details rounded
+					solo placeholder="今天想分享点什么？">
+					<template v-slot:append>
+						<v-btn icon @click="sendMessage">
+							<v-icon>mdi-arrow-up</v-icon>
+						</v-btn>
+					</template>
+				</v-text-field>
+				<div class="warn" style="font-size: small;">
+					内容由AI生成，仅供参考，请遵守<a href="./contract.html">《心聆守护用户协议》</a>和<a
+						href="./Privacy_Policy.html">《隐私政策》</a>
+				</div>
+			</v-footer>
 			</v-app>
 		</div>
 		<style>
-			/* 添加鼠标手型 */
-			.avatar:hover {
-				cursor: pointer;
-			}
+/* #region图标 */
+@font-face {
+    font-family: 'iconfont';
+    src: url('../public/iconfont.woff2?t=1710768339274') format('woff2'),
+         url('../public/iconfont.woff?t=1710768339274') format('woff'),
+         url('../public/iconfont.ttf?t=1710768339274') format('truetype');
+}
+.iconfont {
+    font-family: "iconfont" !important;
+    font-size: 16px;
+    font-style: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+} 
+/* #endregion图标 */
+/* .new-dialog,.oppointment,.report,.community,.immerse {
+    margin-left: 25px;
+} */
+/* 添加鼠标手型 */
+.avatar:hover {
+    cursor: pointer;
+}
 
-			/* 添加鼠标移入效果 */
-			.avatar:hover {
-				background-color: #868686;
-				/* 淡灰色背景 */
-			}
+/* 添加鼠标移入效果 */
+.avatar:hover {
+    background-color: #868686;
+    /* 淡灰色背景 */
+}
+
+.selected-item {
+    background-color: #EDEDED;
+    /* 修改选中后的背景色 */
+    /* 其他样式修改 */
+}
+
+.oppointment,.report,.community,.immerse {
+    height: 72px;
+    line-height: 72px;
+    padding: 0 25px;
+}
+a {
+    text-decoration: none;
+}
+.warn {
+    margin-left: 18px;
+    font-size: small;
+}
+.theme--light .oppointment:hover {
+    background-color: #EDEDED;
+}
+.theme--light .report:hover {
+    background-color: #EDEDED;
+}
+.theme--light .community:hover {
+    background-color: #EDEDED;
+}
+.theme--light .immerse:hover {
+    background-color: #EDEDED;
+}
+.theme--dark .oppointment:hover {
+    background-color: #383838;
+}
+.theme--dark .report:hover {
+    background-color: #383838;
+}
+.theme--dark .community:hover {
+    background-color: #383838;
+}
+.theme--dark .immerse:hover {
+    background-color: #383838;
+}
 		</style>
 
 		<script>
@@ -307,7 +372,7 @@
 						showToast: false,
 						errorMessage: '账号密码错误',
 						drawer: true,
-						url: 'http://127.0.0.1:8080/api',
+						url: 'http://8.134.48.111:8000/api',
 						userId: 0,
 						selectAssistantId: 0,
 						darkMode: false,
