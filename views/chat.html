@@ -17,14 +17,49 @@
 	</head>
 	<body>
 		<div id="app">
+			<!-- 用户操作 -->
+			<v-menu v-model="menuOpen" :close-on-content-click="false" :nudge-right="40" offset-y>
+				<template v-slot:activator="{ on }">
+					<v-btn v-on="on" color="primary" dark>
+						<v-icon>mdi-dots-vertical</v-icon>
+					</v-btn>
+				</template>
+
+				<v-list>
+					<v-list-item @click="viewProfile">
+						<v-list-item-icon>
+							<v-icon>mdi-account</v-icon>
+						</v-list-item-icon>
+						<v-list-item-title>查看个人资料</v-list-item-title>
+					</v-list-item>
+					<v-list-item @click="changePassword">
+						<v-list-item-icon>
+							<v-icon>mdi-lock</v-icon>
+						</v-list-item-icon>
+						<v-list-item-title>修改密码</v-list-item-title>
+					</v-list-item>
+					<v-divider></v-divider>
+					<v-list-item @click="logout">
+						<v-list-item-icon>
+							<v-icon>mdi-logout</v-icon>
+						</v-list-item-icon>
+						<v-list-item-title>退出登录</v-list-item-title>
+					</v-list-item>
+				</v-list>
+			</v-menu>
+			<!-- 系统设置 -->
 			<v-dialog v-model="settingsDialog" max-width="500">
 				<v-card>
-					<v-card-title class="headline">设置</v-card-title>
-
+					<v-card-title class="headline">系统设置</v-card-title>
 					<v-card-text>
-						<!-- 设置内容 -->
-						<v-text-field label="用户名" v-model="username"></v-text-field>
-						<v-text-field label="邮箱" v-model="email"></v-text-field>
+						<!-- 隐私设置 -->
+						<v-checkbox v-model="showProfile" label="显示个人资料"></v-checkbox>
+						<!-- 通知设置 -->
+						<v-select v-model="notificationType" :items="notificationTypes" label="通知类型"></v-select>
+						<v-checkbox v-model="receiveEmail" label="接收邮件通知"></v-checkbox>
+
+						<!-- 语言设置 -->
+						<v-select v-model="language" :items="languages" label="语言"></v-select>
 					</v-card-text>
 
 					<v-card-actions>
@@ -34,6 +69,8 @@
 					</v-card-actions>
 				</v-card>
 			</v-dialog>
+
+			<!-- 登录注册 -->
 			<v-snackbar v-model="showToast" :timeout="2000" color="orange" :top="true" style="text-align: center;">
 				{{ errorMessage }}
 			</v-snackbar>
@@ -48,9 +85,11 @@
 						<v-tab-item>
 							<v-card-text>
 								<v-text-field label="用户名" v-model="username" outlined maxlength="20"
-									placeholder="请输入用户名" clearable prepend-inner-icon="mdi-account"></v-text-field>
+									placeholder="请输入用户名" clearable prepend-inner-icon="mdi-account"
+									:rules="[v => !!v || '用户名不能为空']"></v-text-field>
 								<v-text-field label="密码" type="password" v-model="password" outlined maxlength="20"
-									placeholder="请输入密码" clearable prepend-inner-icon="mdi-lock"></v-text-field>
+									placeholder="请输入密码" clearable prepend-inner-icon="mdi-lock"
+									:rules="[v => !!v || '密码不能为空']"></v-text-field>
 
 							</v-card-text>
 							<v-card-actions>
@@ -62,14 +101,17 @@
 							<v-card-text>
 								<!-- 添加注册表单的内容 -->
 								<v-text-field label="用户名" v-model="newUsername" outlined outlined maxlength="20"
-									placeholder="请输入用户名" prepend-inner-icon="mdi-account"></v-text-field>
+									placeholder="请输入用户名" prepend-inner-icon="mdi-account"
+									:rules="[v => !!v || '用户名不能为空']"></v-text-field>
 								<v-text-field label="邮箱" v-model="newEmail" outlined outlined maxlength="50"
-									placeholder="请输入邮箱" prepend-inner-icon="mdi-email"></v-text-field>
+									placeholder="请输入邮箱" prepend-inner-icon="mdi-email"
+									:rules="[v => !!v || '邮箱不能为空', v => /.+@.+\..+/.test(v) || '邮箱格式不正确']"></v-text-field>
 								<v-text-field label="密码" type="password" v-model="newPassword" outlined maxlength="20"
-									placeholder="请输入密码" clearable prepend-inner-icon="mdi-lock"></v-text-field>
+									placeholder="请输入密码" clearable prepend-inner-icon="mdi-lock"
+									:rules="[v => !!v || '密码不能为空']"></v-text-field>
 								<v-text-field label="确认密码" type="password" v-model="confirmPassword" outlined
-									maxlength="20" placeholder="请输入密码" clearable
-									prepend-inner-icon="mdi-lock"></v-text-field>
+									maxlength="20" placeholder="请输入密码" clearable prepend-inner-icon="mdi-lock"
+									:rules="[v => !!v || '确认密码不能为空', v => newPassword === v || '两次密码输入不一致']"></v-text-field>
 							</v-card-text>
 							<v-card-actions>
 								<v-btn color="primary" @click="register" block>注册</v-btn>
@@ -83,7 +125,8 @@
 
 
 
-			<!--  -->
+
+			<!--创建助手-->
 			<v-dialog v-model="assistantDialog" max-width="500">
 				<v-card>
 					<v-tabs v-model="tab">
@@ -153,8 +196,8 @@
 
 				<v-navigation-drawer v-model="drawer" app width="300">
 					<v-navigation-drawer v-model="drawer" absolute mini-variant>
-						<v-avatar class="d-block text-center mx-auto mt-4" size="36">
-							<v-img src="../img/a-lovely-human-being.png" alt="Image description"></v-img>
+						<v-avatar class="d-block text-center mx-auto mt-4" size="36" @click="toggleMenu">
+							<v-img src="../img/a-lovely-human-being.png" alt="User Avatar"></v-img>
 						</v-avatar>
 
 						<v-divider class="mx-3 my-5"></v-divider>
@@ -213,7 +256,7 @@
 
 
 
-					<v-btn width="100%" elevation="0"  class="mx-3 my-3" @click="openAssistantDialog" block>
+					<v-btn width="100%" elevation="0" class="mx-3 my-3" @click="openAssistantDialog" block>
 						<v-icon left>mdi-robot</v-icon>
 						创建新助手
 
@@ -262,94 +305,109 @@
 
 				</v-main>
 
-			<v-footer app  height="72" inset>
-				<v-text-field v-model='newMessage' background-color="lighten-3" dense flat hide-details rounded
-					solo placeholder="今天想分享点什么？">
-					<template v-slot:append>
-						<v-btn icon @click="sendMessage">
-							<v-icon>mdi-arrow-up</v-icon>
-						</v-btn>
-					</template>
-				</v-text-field>
-				<div class="warn" style="font-size: small;">
-					内容由AI生成，仅供参考，请遵守<a href="./contract.html">《心聆守护用户协议》</a>和<a
-						href="./Privacy_Policy.html">《隐私政策》</a>
-				</div>
-			</v-footer>
+				<v-footer app height="72" inset>
+					<v-text-field v-model='newMessage' background-color="lighten-3" dense flat hide-details rounded solo
+						placeholder="今天想分享点什么？">
+						<template v-slot:append>
+							<v-btn icon @click="sendMessage">
+								<v-icon>mdi-arrow-up</v-icon>
+							</v-btn>
+						</template>
+					</v-text-field>
+					<div class="warn" style="font-size: small;">
+						内容由AI生成，仅供参考，请遵守<a href="./contract.html">《心聆守护用户协议》</a>和<a
+							href="./Privacy_Policy.html">《隐私政策》</a>
+					</div>
+				</v-footer>
 			</v-app>
 		</div>
 		<style>
-/* #region图标 */
-@font-face {
-    font-family: 'iconfont';
-    src: url('../public/iconfont.woff2?t=1710768339274') format('woff2'),
-         url('../public/iconfont.woff?t=1710768339274') format('woff'),
-         url('../public/iconfont.ttf?t=1710768339274') format('truetype');
-}
-.iconfont {
-    font-family: "iconfont" !important;
-    font-size: 16px;
-    font-style: normal;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-} 
-/* #endregion图标 */
-/* .new-dialog,.oppointment,.report,.community,.immerse {
+			/* #region图标 */
+			@font-face {
+				font-family: 'iconfont';
+				src: url('../public/iconfont.woff2?t=1710768339274') format('woff2'),
+					url('../public/iconfont.woff?t=1710768339274') format('woff'),
+					url('../public/iconfont.ttf?t=1710768339274') format('truetype');
+			}
+
+			.iconfont {
+				font-family: "iconfont" !important;
+				font-size: 16px;
+				font-style: normal;
+				-webkit-font-smoothing: antialiased;
+				-moz-osx-font-smoothing: grayscale;
+			}
+
+			/* #endregion图标 */
+			/* .new-dialog,.oppointment,.report,.community,.immerse {
     margin-left: 25px;
 } */
-/* 添加鼠标手型 */
-.avatar:hover {
-    cursor: pointer;
-}
+			/* 添加鼠标手型 */
+			.avatar:hover {
+				cursor: pointer;
+			}
 
-/* 添加鼠标移入效果 */
-.avatar:hover {
-    background-color: #868686;
-    /* 淡灰色背景 */
-}
+			/* 添加鼠标移入效果 */
+			.avatar:hover {
+				background-color: #868686;
+				/* 淡灰色背景 */
+			}
 
-.selected-item {
-    background-color: #EDEDED;
-    /* 修改选中后的背景色 */
-    /* 其他样式修改 */
-}
+			.selected-item {
+				background-color: #EDEDED;
+				/* 修改选中后的背景色 */
+				/* 其他样式修改 */
+			}
 
-.oppointment,.report,.community,.immerse {
-    height: 72px;
-    line-height: 72px;
-    padding: 0 25px;
-}
-a {
-    text-decoration: none;
-}
-.warn {
-    margin-left: 18px;
-    font-size: small;
-}
-.theme--light .oppointment:hover {
-    background-color: #EDEDED;
-}
-.theme--light .report:hover {
-    background-color: #EDEDED;
-}
-.theme--light .community:hover {
-    background-color: #EDEDED;
-}
-.theme--light .immerse:hover {
-    background-color: #EDEDED;
-}
-.theme--dark .oppointment:hover {
-    background-color: #383838;
-}
-.theme--dark .report:hover {
-    background-color: #383838;
-}
-.theme--dark .community:hover {
-    background-color: #383838;
-}
-.theme--dark .immerse:hover {
-    background-color: #383838;
-}
+			.oppointment,
+			.report,
+			.community,
+			.immerse {
+				height: 72px;
+				line-height: 72px;
+				padding: 0 25px;
+			}
+
+			a {
+				text-decoration: none;
+			}
+
+			.warn {
+				margin-left: 18px;
+				font-size: small;
+			}
+
+			.theme--light .oppointment:hover {
+				background-color: #EDEDED;
+			}
+
+			.theme--light .report:hover {
+				background-color: #EDEDED;
+			}
+
+			.theme--light .community:hover {
+				background-color: #EDEDED;
+			}
+
+			.theme--light .immerse:hover {
+				background-color: #EDEDED;
+			}
+
+			.theme--dark .oppointment:hover {
+				background-color: #383838;
+			}
+
+			.theme--dark .report:hover {
+				background-color: #383838;
+			}
+
+			.theme--dark .community:hover {
+				background-color: #383838;
+			}
+
+			.theme--dark .immerse:hover {
+				background-color: #383838;
+			}
 		</style>
 
 		<script>
@@ -365,20 +423,21 @@ a {
 				}),
 				data() {
 					return {
-						// 你的数据属性
-						chatTitle: "",
-						selectedItem: null,
-						settingsDialog: false,
-						showToast: false,
-						errorMessage: '账号密码错误',
-						drawer: true,
-						url: 'http://8.134.48.111:8000/api',
+						// 用户信息
 						userId: 0,
-						selectAssistantId: 0,
-						darkMode: false,
-						language: true, // 添加 language 属性
-						assistantDialog: false,
-						newMessage: "",
+						username: "",
+						password: "",
+						email: "",
+						// 界面状态
+						drawer: true,
+						settingsDialog: false,
+						loginDialog: false,
+						showToast: false,
+						errorMessage: '',
+						tab: 0,
+						// 助手相关
+						selectedItem: null,
+						selectId: 0,
 						assistants: [],
 						assistant: {
 							name: '',
@@ -386,37 +445,62 @@ a {
 							function: '',
 							personalInfo: ''
 						},
+						assistantDialog: false,
+						// 消息相关
+						chatTitle: "",
 						messages: [{
 							sender: 'robot',
 							content: '欢迎来到心聆守护， 让我们一起来进行心理探讨和交流吧。 我可以为您查找心理知识、深入分析心理问题和为你提供安全保护。🤗🤗🤗 '
 						}],
-						loginDialog: false,
-						username: "",
-						password: "",
-						email: "",
-						tab: 0,
+						newMessage: "",
+						// 注册用户
 						newUsername: "",
 						newPassword: "",
 						confirmPassword: "",
 						newEmail: "",
-						selectId: 0,
-						mood: 'mdi-emoticon-happy-outline', // 默认情感图标
+						// 用户操作
+						menuOpen: false,
+						// 其他设置
+						darkMode: false,
+						language: true,
+						mood: 'mdi-emoticon-happy-outline',
+						url: 'http://8.134.48.111:8000/api',
 
 					};
 				},
 				mounted() {
 
-					//设置 Content-Type 
-					axios.defaults.headers.common['Content-Type'] = 'application/json;charset=UTF-8';
-					//设置 携带cookies，如果有安全框架或者SSO对cookie校验，设置携带cookies 
-					axios.defaults.withCredentials = true;
-					// 在页面加载时检查用户登录状态
 					this.checkAuthentication();
-					// 注册热键
 					window.addEventListener('keydown', this.handleHotkey);
 
 				},
 				methods: {
+					// 检查用户登录状态
+					checkAuthentication() {
+						if (!this.getCookie("isAuthenticated")) {
+							this.openLoginDialog();
+						} else {
+							this.userId = this.getCookie("user_id");
+							this.username = this.getCookie("username");
+							this.fetchAssistants();
+						}
+					},
+					// 获取助手列表
+					fetchAssistants() {
+						axios.get(`${this.url}/assistant/listAll?user_id=${this.userId}`)
+							.then(response => {
+								const data = response.data;
+								if (data.code === 200) {
+									this.assistants = data.data;
+									this.selectedItem = data.data[0];
+									this.selectId = data.data[0].id;
+									this.chatTitle = data.data[0].name;
+								}
+							})
+							.catch(error => {
+								console.error('Error fetching assistants:', error);
+							});
+					},
 					getCookie(name) {
 						// 创建一个空对象
 						const cookieMap = {};
@@ -445,32 +529,6 @@ a {
 						// 设置cookie，参数为name，value，expires
 						document.cookie = name + "=" + (value || "") + expires + "; path=/";
 					},
-					// 检查用户登录状态
-					checkAuthentication() {
-						if (!this.getCookie("isAuthenticated")) {
-							this.openLoginDialog();
-						} else {
-							this.userId = this.getCookie("user_id")
-							this.username = this.getCookie("username")
-							axios.get(this.url + '/assistant/listAll?user_id=' + this.userId)
-								.then(response => {
-									data = response.data
-									if (data.code == 200) {
-										console.log(response)
-										this.assistants = data.data
-										this.selectedItem = data.data[0]
-										this.selectId = data.data[0].id
-										this.chatTitle = data.data[0].name
-
-									}
-
-
-								})
-
-							// axios.get(this.url+"/message/get_message").then(response=>{
-							// })
-						}
-					},
 					showSettingsDialog() {
 						this.settingsDialog = true;
 					},
@@ -490,42 +548,38 @@ a {
 					closeLoginDialog() {
 						this.loginDialog = false;
 					},
+					// 用户登录
 					login() {
-						// 这里添加登录逻辑
 						if (this.username && this.password) {
-							// 调用登录接口或者其他登录逻辑
-							axios.post(this.url + "/user/login", {
-								username: this.username,
-								password: this.password
-
-							}).then(response => {
-								data = response.data
-								// 登录成功后关闭对话框
-								if (data.code == 200) {
-									data = data.data
-									this.setCookie("isAuthenticated", true, 1);
-									this.setCookie("user_id", data.id, 1);
-									this.userId = data.id
-									this.setCookie("username", data.username, 1)
-									this.username = data.username;
-									this.loginDialog = false;
-									this.checkAuthentication();
-									// 清空登录表单字段
-									this.password = '';
-									// 
-								} else {
-									console.log(response)
-								}
-
-							}).catch(error => {
-								this.errorMessage = error.message;
-								this.showToast = true;
-							});
+							axios.post(`${this.url}/user/login`, {
+									username: this.username,
+									password: this.password
+								})
+								.then(response => {
+									const data = response.data;
+									if (data.code === 200) {
+										const userData = data.data;
+										this.setCookie("isAuthenticated", true, 1);
+										this.setCookie("user_id", userData.id, 1);
+										this.userId = userData.id;
+										this.setCookie("username", userData.username, 1);
+										this.username = userData.username;
+										this.loginDialog = false;
+										this.checkAuthentication();
+										this.password = '';
+									} else {
+										console.error('Login failed:', response);
+									}
+								})
+								.catch(error => {
+									this.errorMessage = error.message;
+									this.showToast = true;
+								});
 						} else {
-							// 提示用户输入用户名和密码
 							alert('请输入用户名和密码');
 						}
 					},
+					// 注册新用户
 					register() {
 						// 这里添加注册逻辑
 						if (this.newUsername && this.newPassword && this.confirmPassword) {
@@ -591,18 +645,21 @@ a {
 						window.open(route, "_self")
 
 					},
+					// 切换日夜模式
 					toggleDarkMode() {
 						this.darkMode = !this.darkMode;
-						// 在这里可以添加切换日夜模式的逻辑
-						this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
+						this.$vuetify.theme.dark = this.darkMode;
 					},
+					// 切换语言
 					toggleLanguage() {
-						this.chinese = !this.chinese;
-						// 在这里可以添加切换语言的逻辑
+						this.language = !this.language;
+						// 添加切换语言的逻辑
 					},
+					// 打开助手对话框
 					openAssistantDialog() {
 						this.assistantDialog = true;
 					},
+					// 关闭助手对话框
 					closeAssistantDialog() {
 						this.assistantDialog = false;
 					},
@@ -650,116 +707,98 @@ a {
 						})
 
 					},
-					sendMessage() {
-						// 检查新消息是否为空
+					async sendMessage() {
 						if (!this.newMessage.trim()) {
-							// 如果为空，弹出提示框
 							this.vuetify.dialog.alert('请输入消息内容');
-							return; // 结束方法，不发送空消息
+							return;
 						}
-						// 在发送消息后立即将新消息添加到消息列表中
 						this.messages.push({
 							sender: 'human',
 							content: this.newMessage
 						});
-
-						// 在发送消息后显示“思考中”消息
 						this.messages.push({
 							sender: 'robot',
 							content: '思考中...'
 						});
-						axios.post(this.url + '/message/insert_message', {
-							user_id: this.userId,
-							assistant_id: this.selectId,
-							content: this.newMessage
-						})
 
-						// 发送消息给后端并立即更新用户界面
-						axios.post(this.url + '/assistant/ai/choice', {
-							message: this.newMessage,
-							user_id: this.userId
-						}, {
-							headers: {
-								'Content-Type': 'application/x-www-form-urlencoded'
-							}
-						}).then(response => {
-							console.log(response.data.assistant);
-							const data = response.data.assistant;
-							// 根据响应更新用户界面
+						try {
+							const messageResponse = await axios.post(`${this.url}/message/insert_message`, {
+								user_id: this.userId,
+								assistant_id: this.selectId,
+								content: this.newMessage
+							});
+
+							const aiResponse = await axios.post(`${this.url}/assistant/ai/choice`, {
+								message: this.newMessage,
+								user_id: this.userId
+							}, {
+								headers: {
+									'Content-Type': 'application/x-www-form-urlencoded'
+								}
+							});
+
+							const data = aiResponse.data.assistant;
 							this.updateUI(data);
-							// 清空新消息输入框
 							this.newMessage = "";
-						}).catch(error => {
+						} catch (error) {
 							console.error('Error:', error);
-						});
-
-
-					},
-
-					updateUI(data) {
-						// 根据响应更新消息列表中的内容
-						switch (data) {
-							case "选项A":
-								this.messages[this.messages.length - 1].content = "初始化心理助手...";
-								axios.post(this.url + '/assistant/ai/chat', {
-									message: this.newMessage,
-									assistant_id: this.selectId
-								}, {
-									headers: {
-										'Content-Type': 'application/x-www-form-urlencoded'
-									}
-								}).then(response => {
-									console.log(response);
-									data = response.data
-									// 更新消息列表中的内容
-
-									this.messages[this.messages.length - 1].content = data.data
-								});
-								break;
-							case "选项B":
-								this.messages[this.messages.length - 1].content = "查询心理学知识库中...";
-								axios.post(this.url + '/assistant/ai/knowledge', {
-									message: this.newMessage,
-									assistant_id: this.selectId
-								}, {
-									headers: {
-										'Content-Type': 'application/x-www-form-urlencoded'
-									}
-								}).then(response => {
-									console.log(response);
-									data = response.data
-									// 更新消息列表中的内容
-
-									this.messages[this.messages.length - 1].content = data.data
-								});
-								break;
-							case "选项C":
-								this.messages[this.messages.length - 1].content = "检测到危险言论!";
-								this.showToast = true;
-								this.errorMessage = "检测到你有危险言论，已经发生消息到紧急联系人";
-								axios.post(this.url + '/message/insert', {
-									message: this.newMessage,
-									user_id: this.userId
-								}).then(response => {
-									console.log(response);
-								});
-								break;
-							default:
-								this.messages[this.messages.length - 1].content = "生成中...";
-								axios.post(this.url + "/assistant/ai/Samplychat", {
-									message: this.newMessage,
-								}, {
-									headers: {
-										'Content-Type': 'application/x-www-form-urlencoded'
-									}
-								}).then(response => {
-									// 更新消息列表中的内容
-									// 获取 JSON 数据中每个对象的 content 字段的内容
-									const contents = response.data.map(item => item.result.output.content);
-									this.messages[this.messages.length - 1].content = contents.join('');;
-								});
 						}
 					},
+
+					async updateUI(data) {
+						try {
+							let response;
+							switch (data) {
+								case "选项A":
+									this.messages[this.messages.length - 1].content = "初始化心理助手...";
+									response = await axios.post(`${this.url}/assistant/ai/chat`, {
+										message: this.newMessage,
+										assistant_id: this.selectId
+									}, {
+										headers: {
+											'Content-Type': 'application/x-www-form-urlencoded'
+										}
+									});
+									this.messages[this.messages.length - 1].content = response.data.data;
+									break;
+								case "选项B":
+									this.messages[this.messages.length - 1].content = "查询心理学知识库中...";
+									response = await axios.post(`${this.url}/assistant/ai/knowledge`, {
+										message: this.newMessage,
+										assistant_id: this.selectId
+									}, {
+										headers: {
+											'Content-Type': 'application/x-www-form-urlencoded'
+										}
+									});
+									this.messages[this.messages.length - 1].content = response.data.data;
+									break;
+								case "选项C":
+									this.messages[this.messages.length - 1].content = "检测到危险言论!";
+									this.showToast = true;
+									this.errorMessage = "检测到你有危险言论，已经发生消息到紧急联系人";
+									response = await axios.post(`${this.url}/message/insert`, {
+										message: this.newMessage,
+										user_id: this.userId
+									});
+									break;
+								default:
+									this.messages[this.messages.length - 1].content = "生成中...";
+									response = await axios.post(`${this.url}/assistant/ai/Samplychat`, {
+										message: this.newMessage,
+									}, {
+										headers: {
+											'Content-Type': 'application/x-www-form-urlencoded'
+										}
+									});
+									const contents = response.data.map(item => item.result.output.content);
+									this.messages[this.messages.length - 1].content = contents.join('');
+							}
+						} catch (error) {
+							console.error('Error:', error);
+						}
+					},
+
 
 					// 热键处理函数
 					handleHotkey(event) {
@@ -775,53 +814,26 @@ a {
 
 						}
 					},
-					getStreamData(url) {
-						fetch(url)
-							.then(response => {
-								const reader = response.body.getReader();
-								const stream = new ReadableStream({
-									start(controller) {
-										function push() {
-											reader.read().then(({
-												done,
-												value
-											}) => {
-												if (done) {
-													controller.close();
-													return;
-												}
-												controller.enqueue(value);
-												push();
-											});
-										}
-										push();
-									}
-								});
-								return new Response(stream);
-							})
-							.then(response => {
-								const reader = response.body.getReader();
-								const decoder = new TextDecoder();
-
-								function read() {
-									reader.read().then(({
-										done,
-										value
-									}) => {
-										if (done) return;
-										console.log(decoder.decode(value, {
-											stream: true
-										}));
-										read();
-									});
-								}
-								read();
-							})
-							.catch(error => {
-								console.error('Error fetching data:', error);
-							});
-
+					// 用户操作
+					toggleMenu() {
+						this.menuOpen = !this.menuOpen;
+					},
+					viewProfile() {
+						// Add logic to view profile
+						alert("View Profile");
+						this.menuOpen = false;
+					},
+					changePassword() {
+						// Add logic to change password
+						alert("Change Password");
+						this.menuOpen = false;
+					},
+					logout() {
+						// Add logic to logout
+						alert("Logout");
+						this.menuOpen = false;
 					}
+
 				},
 				beforeDestroy() {
 					// 在组件销毁前移除热键监听器
