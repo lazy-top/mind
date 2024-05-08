@@ -460,6 +460,12 @@
 						newEmail: "",
 						// 用户操作
 						menuOpen: false,
+						// 系统设置
+						showProfile: false,
+						notificationTypes: [],
+						notificationType: '',
+						receiveEmail: true,
+						languages: [],
 						// 其他设置
 						darkMode: false,
 						language: true,
@@ -744,10 +750,11 @@
 							console.error('Error:', error);
 						}
 					},
-
 					async updateUI(data) {
 						try {
 							let response;
+							let content = '';
+
 							switch (data) {
 								case "选项A":
 									this.messages[this.messages.length - 1].content = "初始化心理助手...";
@@ -759,7 +766,7 @@
 											'Content-Type': 'application/x-www-form-urlencoded'
 										}
 									});
-									this.messages[this.messages.length - 1].content = response.data.data;
+									content = response.data.data;
 									break;
 								case "选项B":
 									this.messages[this.messages.length - 1].content = "查询心理学知识库中...";
@@ -771,7 +778,7 @@
 											'Content-Type': 'application/x-www-form-urlencoded'
 										}
 									});
-									this.messages[this.messages.length - 1].content = response.data.data;
+									content = response.data.data;
 									break;
 								case "选项C":
 									this.messages[this.messages.length - 1].content = "检测到危险言论!";
@@ -792,14 +799,24 @@
 										}
 									});
 									const contents = response.data.map(item => item.result.output.content);
-									this.messages[this.messages.length - 1].content = contents.join('');
+									content = contents.join('');
 							}
+							// 先清空
+							this.messages[this.messages.length - 1].content = '';
+							// 逐个字符赋值给 content 属性，并模拟打印效果
+							let index = 0;
+							const intervalId = setInterval(() => {
+								if (index < content.length) {
+									this.messages[this.messages.length - 1].content += content[index];
+									index++;
+								} else {
+									clearInterval(intervalId); // 结束循环
+								}
+							}, 50); // 每100毫秒输出一个字符
 						} catch (error) {
 							console.error('Error:', error);
 						}
 					},
-
-
 					// 热键处理函数
 					handleHotkey(event) {
 						// Enter：发送消息
@@ -810,8 +827,6 @@
 						// ctrl+enter键：换行
 						if (event.ctrlKey && event.keyCode === 13) {
 							// 输入框换行
-
-
 						}
 					},
 					// 用户操作
