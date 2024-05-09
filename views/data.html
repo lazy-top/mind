@@ -21,8 +21,13 @@
 	<body>
 
 		<div id="app">
+			
+			
+
 			<!-- App.vue 根组件 -->
+			
 			<v-app>
+				
 				<v-system-bar app>
 					<v-spacer></v-spacer>
 					<v-btn icon>
@@ -43,9 +48,10 @@
 
 
 				<v-navigation-drawer v-model="drawer" app absolute mini-variant>
-					<v-avatar class="d-block text-center mx-auto mt-4" size="36">
-						<v-img src="../img/a-lovely-human-being.png" alt="Image description"></v-img>
-					</v-avatar>
+						<v-avatar class="d-block text-center mx-auto mt-4" size="36" @click="toggleMenu"
+							style="cursor: pointer;">
+							<v-img src="../img/a-lovely-human-being.png" alt="User Avatar"></v-img>
+						</v-avatar>
 
 					<v-divider class="mx-3 my-5"></v-divider>
 
@@ -140,24 +146,34 @@
 							</v-col>
 						</v-row>
 					</v-container>
-					<v-row style="max-height: 300px; overflow-y: auto;">
+					<v-row style="max-height: 300px; overflow-y: auto;" class="mb-3">
 						<v-col cols="12">
 							<h3 class="text-center">历史消息</h3>
 							<p class="text-center">根据上下文历史消息进行综合评估</p>
-							<ul>
-								<!-- 历史消息的列表项 -->
-								<li v-for="(message, index) in displayedMessages" :key="message.content">
-									{{ message.content }} - {{ message.create_at }}
-								</li>
-								<!-- 添加更多历史消息 -->
-								<li v-if="showEllipsis" class="ellipsis">...</li>
-							</ul>
+							<!-- 显示消息总数 -->
+							<p class="text-center">共 {{ historyMessages.length }} 条消息</p>
 						</v-col>
 					</v-row>
 
-
-
-
+					<v-row>
+						<v-col cols="12">
+							<ul class="message-list">
+								<!-- 历史消息的列表项 -->
+								<li v-for="(message, index) in displayedMessages" :key="index" class="message-item">
+									<!-- 添加头像 -->
+									<v-avatar size="40">
+										<img src="../img/a-lovely-human-being.png" alt="Avatar" class="avatar">
+									</v-avatar>
+									<span class="message-content">{{ message.content }}</span> - <span
+										class="message-time">{{ message.create_at }}</span>
+								</li>
+								<!-- 使用图标替换省略号 -->
+								<li v-if="showEllipsis" class="ellipsis">
+									<v-icon class="ellipsis-icon">mdi-dots-vertical</v-icon>
+								</li>
+							</ul>
+						</v-col>
+					</v-row>
 
 
 				</v-main>
@@ -166,9 +182,9 @@
 		<style>
 			canvas {
 				border: 1px solid #ccc;
-			}
+			},
+			
 		</style>
-
 		<script>
 			new Vue({
 				el: '#app',
@@ -191,11 +207,11 @@
 						maxDisplayedMessages: 5, // 最大显示的消息数量
 						emotions_analyze_data: [],
 						bias_scores_data: [],
-						strategy_scores_data: []
-
-
+						strategy_scores_data: [],
+						// 用户操作
+						menuOpen: false,
+						changePasswordDialog: false,
 					}
-
 				},
 				computed: {
 					displayedMessages() {
@@ -206,177 +222,59 @@
 					}
 				},
 				methods: {
+					// 在选项卡切换后重新渲染图表
 					mianTabChange() {
-
-						// 在选项卡切换后重新渲染图表
 						this.$nextTick(() => {
 							this.createChart(); // 调用创建图表的方法
 						});
-
 					},
+					// 发送axios请求获取数据
+					fetchData(endpoint, callback) {
+						axios.post(this.url + endpoint, {
+							user_id: this.user_id
+						}, {
+							headers: {
+								'Content-Type': 'application/x-www-form-urlencoded'
+							}
+						}).then(response => {
+							callback(response.data);
+						});
+					},
+					// 获取主要数据
 					getData() {
-						axios.post(this.url + '/message/me_detail', {
-							user_id: this.user_id
-						}, {
-							headers: {
-								'Content-Type': 'application/x-www-form-urlencoded'
-							}
-						}).then(response => {
-							data = response.data
-							this.historyMessages = data.data
-						})
-
+						this.fetchData('/message/me_detail', data => {
+							this.historyMessages = data.data;
+						});
 					},
+					// 获取echart数据
 					get_echart_data() {
-						axios.post(this.url + '/data/bias_scores', {
-							user_id: this.user_id
-						}, {
-							headers: {
-								'Content-Type': 'application/x-www-form-urlencoded'
-							}
-						}).then(response => {
-							data = response.data
+						this.fetchData('/data/bias_scores', data => {
 							let jsonObj = JSON.parse(data.data);
-							// 提取对象中的所有值（数字）并放入数组
 							let numbersArray = Object.values(jsonObj);
-							this.bias_scores_data = numbersArray
-							console.log(numbersArray)
-							// 初始化认知偏向分析雷达图
-							var cognitiveBiasChart = echarts.init(document.getElementById('cognitiveBiasChart'));
-							var cognitiveBiasOption = {
-								title: {
-									text: '认知偏向分析'
-								},
-								tooltip: {},
-								radar: {
-									indicator: [{
-											name: '乐观',
-											max: 100
-										},
-										{
-											name: '积极',
-											max: 100
-										},
-										{
-											name: '自信',
-											max: 100
-										},
-										{
-											name: '消极',
-											max: 100
-										},
-										{
-											name: '焦虑',
-											max: 100
-										},
-										{
-											name: '抑郁',
-											max: 100
-										}
-									]
-								},
-								series: [{
-									type: 'radar',
-									data: [{
-										value: numbersArray,
-										name: '偏向分析'
-									}]
-								}]
-							};
-							cognitiveBiasChart.setOption(cognitiveBiasOption);
-
-						})
-						axios.post(this.url + '/data/strategy_scores', {
-							user_id: this.user_id
-						}, {
-							headers: {
-								'Content-Type': 'application/x-www-form-urlencoded'
-							}
-						}).then(response => {
-							data = response.data
-							
-							// 使用JSON.parse将字符串解析为对象
+							this.bias_scores_data = numbersArray;
+							this.initializeRadarChart('cognitiveBiasChart', '认知偏向分析', numbersArray);
+						});
+						this.fetchData('/data/strategy_scores', data => {
 							let jsonObj = JSON.parse(data.data);
-							
-							// 提取对象中的所有值（数字）并放入数组
 							let numbersArray = Object.values(jsonObj);
-							this.strategy_scores_data = numbersArray
-							console.log(numbersArray)
-							// 初始化应对策略评估统计对策分析图
-							var strategyAnalysisChart = echarts.init(document.getElementById('strategyAnalysisChart'));
-							var strategyAnalysisOption = {
-								title: {
-									text: '应对策略评估'
-								},
-								tooltip: {
-									trigger: 'axis'
-								},
-								xAxis: {
-									type: 'category',
-									data: ['认知能力', '情绪调节', '社交技能', '学习能力', '适应能力']
-								},
-								yAxis: {
-									type: 'value'
-								},
-								series: [{
-									data: numbersArray,
-									type: 'bar'
-								}]
-							};
-							strategyAnalysisChart.setOption(strategyAnalysisOption);
-
-						})
-						axios.post(this.url + '/data/emotions_analyze', {
-							user_id: this.user_id
-						}, {
-							headers: {
-								'Content-Type': 'application/x-www-form-urlencoded'
-							}
-						}).then(response => {
-							data = response.data
-							this.emotions_analyze_data = data.data
-							// 将字符串分割成由逗号分隔的部分
-							let str_parts = data.data.split(',');
-							
-							// 将每部分转换为数字，并过滤掉空字符串
-							let num_array = str_parts.map(part => {
-							    if (part) {
-							        return parseFloat(part);
-							    }
-							}).filter(num => !isNaN(num));
-
-							console.log(this.emotions_analyze_data)
-							// 此时num_array就是您想要的数字数组
-							console.log(num_array);
-							// 初始化情绪变化趋势折线图
-							var emotionTrendChart = echarts.init(document.getElementById('emotionTrendChart'));
-							var emotionTrendOption = {
-								title: {
-									text: '情绪变化趋势'
-								},
-								tooltip: {
-									trigger: 'axis'
-								},
-								xAxis: {
-									type: 'category',
-									data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] // 将英文星期名称改为中文
-								},
-								yAxis: {
-									type: 'value'
-								},
-								series: [{
-									data:num_array,
-									type: 'line'
-								}]
-							};
-							emotionTrendChart.setOption(emotionTrendOption);
-
-						})
+							this.strategy_scores_data = numbersArray;
+							this.initializeBarChart('strategyAnalysisChart', '应对策略评估', ['认知能力', '情绪调节', '社交技能',
+								'学习能力', '适应能力'
+							], numbersArray);
+						});
+						this.fetchData('/data/emotions_analyze', data => {
+							this.emotions_analyze_data = data.data.split(',').map(part => parseFloat(part))
+								.filter(num => !isNaN(num));
+							this.initializeLineChart('emotionTrendChart', '情绪变化趋势', ['周一', '周二', '周三', '周四',
+								'周五', '周六', '周日'
+							], this.emotions_analyze_data);
+						});
 					},
+					// 在新标签页打开指定路由
 					topage(route) {
-						window.open(route, "_self")
-
+						window.open(route, "_self");
 					},
+					// 获取cookie值
 					getCookie(name) {
 						const cookieMap = {};
 						const cookies = document.cookie.split("; ");
@@ -386,6 +284,7 @@
 						});
 						return cookieMap[name];
 					},
+					// 设置cookie值
 					setCookie(name, value, days) {
 						let expires = "";
 						if (days) {
@@ -395,38 +294,154 @@
 						}
 						document.cookie = name + "=" + (value || "") + expires + "; path=/";
 					},
+					// 切换日/夜模式
 					toggleDarkMode() {
 						this.darkMode = !this.darkMode;
-						// 在这里可以添加切换日夜模式的逻辑
 						this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
 					},
-
+					// 切换语言
 					toggleLanguage() {
-						// 这里可以添加切换语言的逻辑
+						// 添加逻辑
 					},
+					// 创建日常图表（空方法）
 					createDailyChart() {
-
+						// 添加逻辑
 					},
-
-
+					// 初始化雷达图
+					initializeRadarChart(elementId, title, data) {
+						var chart = echarts.init(document.getElementById(elementId));
+						var option = {
+							title: {
+								text: title
+							},
+							tooltip: {},
+							radar: {
+								indicator: [{
+										name: '乐观',
+										max: 100
+									},
+									{
+										name: '积极',
+										max: 100
+									},
+									{
+										name: '自信',
+										max: 100
+									},
+									{
+										name: '消极',
+										max: 100
+									},
+									{
+										name: '焦虑',
+										max: 100
+									},
+									{
+										name: '抑郁',
+										max: 100
+									}
+								]
+							},
+							series: [{
+								type: 'radar',
+								data: [{
+									value: data,
+									name: '偏向分析'
+								}]
+							}]
+						};
+						chart.setOption(option);
+					},
+					// 初始化柱状图
+					initializeBarChart(elementId, title, xAxisData, seriesData) {
+						var chart = echarts.init(document.getElementById(elementId));
+						var option = {
+							title: {
+								text: title
+							},
+							tooltip: {
+								trigger: 'axis'
+							},
+							xAxis: {
+								type: 'category',
+								data: xAxisData
+							},
+							yAxis: {
+								type: 'value'
+							},
+							series: [{
+								data: seriesData,
+								type: 'bar'
+							}]
+						};
+						chart.setOption(option);
+					},
+					// 初始化折线图
+					initializeLineChart(elementId, title, xAxisData, seriesData) {
+						var chart = echarts.init(document.getElementById(elementId));
+						var option = {
+							title: {
+								text: title
+							},
+							tooltip: {
+								trigger: 'axis'
+							},
+							xAxis: {
+								type: 'category',
+								data: xAxisData
+							},
+							yAxis: {
+								type: 'value'
+							},
+							series: [{
+								data: seriesData,
+								type: 'line'
+							}]
+						};
+						chart.setOption(option);
+					},
+					// 用户操作
+					toggleMenu() {
+						this.menuOpen = !this.menuOpen;
+					},
+					// 更改密码
+					changePassword() {
+						this.changePasswordDialog = true;
+						this.menuOpen = false;
+					},
+					// 退出登录
+					logout() {
+						// 清空cookie缓存并重新加载页面
+						document.cookie = "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+						document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+						document.cookie = "isAuthenticated=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+						location.reload();
+						this.menuOpen = false;
+					},
+					// 提交密码修改请求
+					submitPassword() {
+						// 检查新密码和确认密码是否一致
+						if (this.password !== this.confirmPassword) {
+							this.error = '密码不一致';
+							return;
+						}
+						// 发送密码修改请求，这里只是示例，需要替换为实际的请求逻辑
+						// 可以在这里使用axios发送修改密码的请求
+						// 修改密码成功后，关闭对话框，并清空密码输入框和错误提示
+						this.changePasswordDialog = false;
+						this.password = '';
+						this.confirmPassword = '';
+						this.error = '';
+					}
 				},
 				beforeDestroy() {
-
+					// 添加逻辑
 				},
 				mounted() {
 					this.user_id = this.getCookie("user_id");
-					this.getData()
-					this.get_echart_data()
-
-
-
-
-
-
-					
-
+					this.getData();
+					this.get_echart_data();
 				}
-
 			})
 		</script>
 

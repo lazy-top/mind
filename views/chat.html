@@ -69,7 +69,27 @@
 					</v-card-actions>
 				</v-card>
 			</v-dialog>
-
+			<!-- 修改密码 -->
+			<v-dialog v-model="changePasswordDialog" max-width="500px">
+				<v-card>
+					<v-card-title>修改密码</v-card-title>
+					<v-card-text>
+						<!-- 修改密码表单 -->
+						<v-form ref="form" @submit.prevent="submitPassword">
+							<v-text-field v-model="password" label="新密码" type="password"></v-text-field>
+							<v-text-field v-model="confirmPassword" label="确认密码" type="password"></v-text-field>
+							<!-- 错误提示 -->
+							<v-alert v-if="error" type="error">{{ error }}</v-alert>
+						</v-form>
+					</v-card-text>
+					<v-card-actions>
+						<!-- 取消按钮 -->
+						<v-btn color="red darken-1" @click="dialog = false">取消</v-btn>
+						<!-- 提交按钮 -->
+						<v-btn color="primary" @click="submitPassword">提交</v-btn>
+					</v-card-actions>
+				</v-card>
+			</v-dialog>
 			<!-- 登录注册 -->
 			<v-snackbar v-model="showToast" :timeout="2000" color="orange" :top="true" style="text-align: center;">
 				{{ errorMessage }}
@@ -196,7 +216,8 @@
 
 				<v-navigation-drawer v-model="drawer" app width="300">
 					<v-navigation-drawer v-model="drawer" absolute mini-variant>
-						<v-avatar class="d-block text-center mx-auto mt-4" size="36" @click="toggleMenu">
+						<v-avatar class="d-block text-center mx-auto mt-4" size="36" @click="toggleMenu"
+							style="cursor: pointer;">
 							<v-img src="../img/a-lovely-human-being.png" alt="User Avatar"></v-img>
 						</v-avatar>
 
@@ -292,9 +313,10 @@
 								<div>
 									<span style="font-weight: bold;">{{ message.sender === 'robot' ? '小海' :
 					                                                    '你' }}</span>
-									<!-- 如果消息为 "生产中..."，显示加载中的进度圆 -->
-									<v-progress-circular v-if="message.content === '思考中...'" indeterminate
-										color="primary" size="16"></v-progress-circular>
+									<!-- 如果消息为 ，显示加载中的进度圆 -->
+									<v-progress-circular
+										v-if="message.content === '思考中...' || message.content === '初始化心理助手...'||message.content === '查询心理学知识库中...'"
+										indeterminate color="primary" size="16"></v-progress-circular>
 								</div>
 								<div>
 									<span>{{ message.content }}</span>
@@ -460,6 +482,7 @@
 						newEmail: "",
 						// 用户操作
 						menuOpen: false,
+						changePasswordDialog: false,
 						// 系统设置
 						showProfile: false,
 						notificationTypes: [],
@@ -478,7 +501,11 @@
 
 					this.checkAuthentication();
 					window.addEventListener('keydown', this.handleHotkey);
-
+					// 加载本地存储的历史消息
+					const storedMessages = localStorage.getItem('chatMessages');
+					if (storedMessages) {
+						this.messages = JSON.parse(storedMessages);
+					}
 				},
 				methods: {
 					// 检查用户登录状态
@@ -713,29 +740,58 @@
 						})
 
 					},
+					// 在适当的地方调用此函数来获取历史消息
+					async fetchChatHistory() {
+						try {
+							const response = await axios.get('/api/chat/history');
+							const history = response.data.messages;
+							// 处理历史消息
+							displayChatHistory(history);
+						} catch (error) {
+							console.error('Error fetching chat history:', error);
+						}
+					},
+
+					// 将历史消息展示在界面上的函数示例
+					displayChatHistory(history) {
+						// 假设 messages 是一个数组，每个元素是消息对象，具有 sender 和 content 属性
+						history.forEach(message => {
+							const sender = message.sender;
+							const content = message.content;
+							// 在界面上显示历史消息
+							console.log(`[${sender}]: ${content}`);
+						});
+					},
 					async sendMessage() {
+						let sendMessage=this.newMessage;
 						if (!this.newMessage.trim()) {
 							this.vuetify.dialog.alert('请输入消息内容');
 							return;
 						}
-						this.messages.push({
+						// 保存发送的消息到本地存储
+						this.saveMessageLocally({
 							sender: 'human',
 							content: this.newMessage
 						});
 						this.messages.push({
+							sender: 'human',
+							content: this.newMessage
+						});
+						// 显示“思考中...”消息
+						this.messages.push({
 							sender: 'robot',
 							content: '思考中...'
 						});
-
+						this.newMessage = "";
 						try {
 							const messageResponse = await axios.post(`${this.url}/message/insert_message`, {
 								user_id: this.userId,
 								assistant_id: this.selectId,
-								content: this.newMessage
+								content: sendMessage
 							});
 
 							const aiResponse = await axios.post(`${this.url}/assistant/ai/choice`, {
-								message: this.newMessage,
+								message: sendMessage,
 								user_id: this.userId
 							}, {
 								headers: {
@@ -744,13 +800,12 @@
 							});
 
 							const data = aiResponse.data.assistant;
-							this.updateUI(data);
-							this.newMessage = "";
+							this.updateUI(data,sendMessage);
 						} catch (error) {
 							console.error('Error:', error);
 						}
 					},
-					async updateUI(data) {
+					async updateUI(data,sendMessage) {
 						try {
 							let response;
 							let content = '';
@@ -759,7 +814,7 @@
 								case "选项A":
 									this.messages[this.messages.length - 1].content = "初始化心理助手...";
 									response = await axios.post(`${this.url}/assistant/ai/chat`, {
-										message: this.newMessage,
+										message: sendMessage,
 										assistant_id: this.selectId
 									}, {
 										headers: {
@@ -771,7 +826,7 @@
 								case "选项B":
 									this.messages[this.messages.length - 1].content = "查询心理学知识库中...";
 									response = await axios.post(`${this.url}/assistant/ai/knowledge`, {
-										message: this.newMessage,
+										message: sendMessage,
 										assistant_id: this.selectId
 									}, {
 										headers: {
@@ -785,14 +840,14 @@
 									this.showToast = true;
 									this.errorMessage = "检测到你有危险言论，已经发生消息到紧急联系人";
 									response = await axios.post(`${this.url}/message/insert`, {
-										message: this.newMessage,
+										message: sendMessage,
 										user_id: this.userId
 									});
 									break;
 								default:
 									this.messages[this.messages.length - 1].content = "生成中...";
 									response = await axios.post(`${this.url}/assistant/ai/Samplychat`, {
-										message: this.newMessage,
+										message: sendMessage,
 									}, {
 										headers: {
 											'Content-Type': 'application/x-www-form-urlencoded'
@@ -801,6 +856,12 @@
 									const contents = response.data.map(item => item.result.output.content);
 									content = contents.join('');
 							}
+
+							// 保存 AI 返回的消息到本地存储
+							this.saveMessageLocally({
+								sender: 'robot',
+								content: content
+							});
 							// 先清空
 							this.messages[this.messages.length - 1].content = '';
 							// 逐个字符赋值给 content 属性，并模拟打印效果
@@ -816,6 +877,18 @@
 						} catch (error) {
 							console.error('Error:', error);
 						}
+					},
+					// 保存消息到本地存储
+					saveMessageLocally(message) {
+						// 获取本地存储中的历史消息（如果有）
+						let storedMessages = localStorage.getItem('chatMessages');
+						storedMessages = storedMessages ? JSON.parse(storedMessages) : [];
+
+						// 将新消息添加到历史消息列表
+						storedMessages.push(message);
+
+						// 将更新后的历史消息列表重新存储到本地存储中
+						localStorage.setItem('chatMessages', JSON.stringify(storedMessages));
 					},
 					// 热键处理函数
 					handleHotkey(event) {
@@ -833,20 +906,40 @@
 					toggleMenu() {
 						this.menuOpen = !this.menuOpen;
 					},
+					// 查看个人信息
 					viewProfile() {
 						// Add logic to view profile
 						alert("View Profile");
 						this.menuOpen = false;
 					},
+					// 更改密码
 					changePassword() {
-						// Add logic to change password
-						alert("Change Password");
+						this.changePasswordDialog = true;
 						this.menuOpen = false;
 					},
+					// 退出登录
 					logout() {
-						// Add logic to logout
-						alert("Logout");
+						// 清空cookie缓存并重新加载页面
+						document.cookie = "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+						document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+						document.cookie = "isAuthenticated=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+						location.reload();
 						this.menuOpen = false;
+					},
+					// 提交密码修改请求
+					submitPassword() {
+						// 检查新密码和确认密码是否一致
+						if (this.password !== this.confirmPassword) {
+							this.error = '密码不一致';
+							return;
+						}
+						// 发送密码修改请求，这里只是示例，需要替换为实际的请求逻辑
+						// 可以在这里使用axios发送修改密码的请求
+						// 修改密码成功后，关闭对话框，并清空密码输入框和错误提示
+						this.changePasswordDialog = false;
+						this.password = '';
+						this.confirmPassword = '';
+						this.error = '';
 					}
 
 				},

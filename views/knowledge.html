@@ -22,7 +22,36 @@
 			<div id="app">
 
 
+				<!-- 用户操作 -->
+				<v-menu v-model="menuOpen" :close-on-content-click="false" :nudge-right="40" offset-y>
+					<template v-slot:activator="{ on }">
+						<v-btn v-on="on" color="primary" dark>
+							<v-icon>mdi-dots-vertical</v-icon>
+						</v-btn>
+					</template>
 
+					<v-list>
+						<v-list-item @click="viewProfile">
+							<v-list-item-icon>
+								<v-icon>mdi-account</v-icon>
+							</v-list-item-icon>
+							<v-list-item-title>查看个人资料</v-list-item-title>
+						</v-list-item>
+						<v-list-item @click="changePassword">
+							<v-list-item-icon>
+								<v-icon>mdi-lock</v-icon>
+							</v-list-item-icon>
+							<v-list-item-title>修改密码</v-list-item-title>
+						</v-list-item>
+						<v-divider></v-divider>
+						<v-list-item @click="logout">
+							<v-list-item-icon>
+								<v-icon>mdi-logout</v-icon>
+							</v-list-item-icon>
+							<v-list-item-title>退出登录</v-list-item-title>
+						</v-list-item>
+					</v-list>
+				</v-menu>
 
 
 
@@ -50,10 +79,10 @@
 
 
 					<v-navigation-drawer v-model="drawer" app absolute mini-variant>
-						<v-avatar class="d-block text-center mx-auto mt-4" size="36">
-							<v-img src="../img/a-lovely-human-being.png" alt="Image description"></v-img>
+						<v-avatar class="d-block text-center mx-auto mt-4" size="36" @click="toggleMenu"
+							style="cursor: pointer;">
+							<v-img src="../img/a-lovely-human-being.png" alt="User Avatar"></v-img>
 						</v-avatar>
-
 						<v-divider class="mx-3 my-5"></v-divider>
 
 						<v-btn icon size="28" class="d-block text-center mx-auto mb-9"
@@ -138,7 +167,10 @@
 							drawer: true,
 							darkMode: false,
 							language: true, // 添加 language 属性
-							showSettingsDialog: false
+							showSettingsDialog: false,
+							// 用户操作
+							menuOpen: false,
+							changePasswordDialog: false,
 
 						}
 
@@ -181,6 +213,39 @@
 						toggleLanguage() {
 							// 这里可以添加切换语言的逻辑
 						},
+						// 用户操作
+						toggleMenu() {
+							this.menuOpen = !this.menuOpen;
+						},
+						// 更改密码
+						changePassword() {
+							this.changePasswordDialog = true;
+							this.menuOpen = false;
+						},
+						// 退出登录
+						logout() {
+							// 清空cookie缓存并重新加载页面
+							document.cookie = "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+							document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+							document.cookie = "isAuthenticated=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+							location.reload();
+							this.menuOpen = false;
+						},
+						// 提交密码修改请求
+						submitPassword() {
+							// 检查新密码和确认密码是否一致
+							if (this.password !== this.confirmPassword) {
+								this.error = '密码不一致';
+								return;
+							}
+							// 发送密码修改请求，这里只是示例，需要替换为实际的请求逻辑
+							// 可以在这里使用axios发送修改密码的请求
+							// 修改密码成功后，关闭对话框，并清空密码输入框和错误提示
+							this.changePasswordDialog = false;
+							this.password = '';
+							this.confirmPassword = '';
+							this.error = '';
+						}
 
 					},
 					beforeDestroy() {
@@ -189,73 +254,73 @@
 					mounted() {
 						this.user_id = this.getCookie("user_id");
 
-				const myChart = echarts.init(document.getElementById('graph'));
+						const myChart = echarts.init(document.getElementById('graph'));
 
-				const selectNode = document.getElementById('node-select');
+						const selectNode = document.getElementById('node-select');
 
-				// 添加选项到选择框中
-				p_nodes.forEach(node => {
-					const option = document.createElement('option');
-					option.value = node.name;
-					option.textContent = node.name;
-					selectNode.appendChild(option);
-				});
+						// 添加选项到选择框中
+						p_nodes.forEach(node => {
+							const option = document.createElement('option');
+							option.value = node.name;
+							option.textContent = node.name;
+							selectNode.appendChild(option);
+						});
 
-				// 根据选择的节点重新绘制图形
-				selectNode.addEventListener('change', function() {
-					const selectedNode = this.value;
-					const selectedLinks = p_links.filter(link => link.source === selectedNode || link
-						.target === selectedNode);
-					const relatedNodes = new Set();
-					selectedLinks.forEach(link => {
-						relatedNodes.add(link.source);
-						relatedNodes.add(link.target);
-					});
-					const filteredNodes = p_nodes.filter(node => relatedNodes.has(node.name));
-					myChart.setOption({
-						series: [{
-							type: 'graph',
-							layout: 'force',
-							symbolSize: 40,
-							roam: true,
-							edgeSymbol: ['circle', 'arrow'],
-							edgeSymbolSize: [4, 10],
-							edgeLabel: {
-								show: true,
-								fontSize: 12
-							},
-							data: filteredNodes,
-							links: selectedLinks
-						}]
-					});
-				});
+						// 根据选择的节点重新绘制图形
+						selectNode.addEventListener('change', function() {
+							const selectedNode = this.value;
+							const selectedLinks = p_links.filter(link => link.source === selectedNode || link
+								.target === selectedNode);
+							const relatedNodes = new Set();
+							selectedLinks.forEach(link => {
+								relatedNodes.add(link.source);
+								relatedNodes.add(link.target);
+							});
+							const filteredNodes = p_nodes.filter(node => relatedNodes.has(node.name));
+							myChart.setOption({
+								series: [{
+									type: 'graph',
+									layout: 'force',
+									symbolSize: 40,
+									roam: true,
+									edgeSymbol: ['circle', 'arrow'],
+									edgeSymbolSize: [4, 10],
+									edgeLabel: {
+										show: true,
+										fontSize: 12
+									},
+									data: filteredNodes,
+									links: selectedLinks
+								}]
+							});
+						});
 
-				// 默认只显示第一个节点及其相关的边
-				const defaultNode = p_nodes[0].name;
-				const defaultLinks = p_links.filter(link => link.source === defaultNode || link.target ===
-					defaultNode);
-				const defaultRelatedNodes = new Set();
-				defaultLinks.forEach(link => {
-					defaultRelatedNodes.add(link.source);
-					defaultRelatedNodes.add(link.target);
-				});
-				const defaultFilteredNodes = p_nodes.filter(node => defaultRelatedNodes.has(node.name));
-				myChart.setOption({
-					series: [{
-						type: 'graph',
-						layout: 'force',
-						symbolSize: 40,
-						roam: true,
-						edgeSymbol: ['circle', 'arrow'],
-						edgeSymbolSize: [4, 10],
-						edgeLabel: {
-							show: true,
-							fontSize: 12
-						},
-						data: defaultFilteredNodes,
-						links: defaultLinks
-					}]
-				});
+						// 默认只显示第一个节点及其相关的边
+						const defaultNode = p_nodes[0].name;
+						const defaultLinks = p_links.filter(link => link.source === defaultNode || link.target ===
+							defaultNode);
+						const defaultRelatedNodes = new Set();
+						defaultLinks.forEach(link => {
+							defaultRelatedNodes.add(link.source);
+							defaultRelatedNodes.add(link.target);
+						});
+						const defaultFilteredNodes = p_nodes.filter(node => defaultRelatedNodes.has(node.name));
+						myChart.setOption({
+							series: [{
+								type: 'graph',
+								layout: 'force',
+								symbolSize: 40,
+								roam: true,
+								edgeSymbol: ['circle', 'arrow'],
+								edgeSymbolSize: [4, 10],
+								edgeLabel: {
+									show: true,
+									fontSize: 12
+								},
+								data: defaultFilteredNodes,
+								links: defaultLinks
+							}]
+						});
 
 
 					}
