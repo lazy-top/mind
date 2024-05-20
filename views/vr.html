@@ -10,6 +10,7 @@
 		<script src="../js/axios.min.js"></script>
 		<script src="../js/vuex.global.min.js"></script>
 		<script src="../js/aframe.min.js"></script>
+		<script src="../js/global_login.js"></script>
 		<!-- 引入 Vuetify 的 CSS -->
 		<link href="../css/materialdesignicons.min.css" rel="stylesheet">
 		<link href="../css/vuetify.min.css" rel="stylesheet">
@@ -23,12 +24,6 @@
 
 			<!-- 用户操作 -->
 			<v-menu v-model="menuOpen" :close-on-content-click="false" :nudge-right="40" offset-y>
-				<template v-slot:activator="{ on }">
-					<v-btn v-on="on" color="primary" dark>
-						<v-icon>mdi-dots-vertical</v-icon>
-					</v-btn>
-				</template>
-
 				<v-list>
 					<v-list-item @click="viewProfile">
 						<v-list-item-icon>
@@ -214,6 +209,7 @@
 						this.darkMode = !this.darkMode;
 						// 在这里可以添加切换日夜模式的逻辑
 						this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
+						this.setCookie('darkMode', this.darkMode, 1000)
 					},
 
 					toggleLanguage() {
@@ -257,6 +253,8 @@
 
 				},
 				mounted() {
+					this.$vuetify.theme.dark= this.getCookie("darkMode");
+					this.darkMode = this.getCookie("darkMode");
 					this.user_id = this.getCookie("user_id");
 
 

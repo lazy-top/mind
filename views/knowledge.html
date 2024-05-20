@@ -11,6 +11,7 @@
 			<script src="../js/vuex.global.min.js"></script>
 			<script src="../js/three.min.js"></script>
 			<script src="../js/echarts.min.js"></script>
+			<script src="../js/global_login.js"></script>
 
 			<!-- 引入 Vuetify 的 CSS -->
 			<link href="../css/materialdesignicons.min.css" rel="stylesheet">
@@ -24,12 +25,6 @@
 
 				<!-- 用户操作 -->
 				<v-menu v-model="menuOpen" :close-on-content-click="false" :nudge-right="40" offset-y>
-					<template v-slot:activator="{ on }">
-						<v-btn v-on="on" color="primary" dark>
-							<v-icon>mdi-dots-vertical</v-icon>
-						</v-btn>
-					</template>
-
 					<v-list>
 						<v-list-item @click="viewProfile">
 							<v-list-item-icon>
@@ -78,7 +73,7 @@
 
 
 
-					<v-navigation-drawer v-model="drawer" app absolute mini-variant>
+					<v-navigation-drawer v-model="drawer" absolute mini-variant app>
 						<v-avatar class="d-block text-center mx-auto mt-4" size="36" @click="toggleMenu"
 							style="cursor: pointer;">
 							<v-img src="../img/a-lovely-human-being.png" alt="User Avatar"></v-img>
@@ -136,17 +131,59 @@
 							</v-tooltip>
 						</v-btn>
 					</v-navigation-drawer>
-
 					<v-main>
-						<label for="node-select">选择要显示的节点：</label>
-						<select id="node-select"></select>
-						<div id="graph" style="width: 100%; height: 600px;"></div>
-
+						<v-container fluid>
+							<v-row>
+								<v-col cols="12">
+									<v-select v-model="selectedItem" :items="items" label="选择项" outlined dense></v-select>
+									<v-btn @click="showSelectedItem" color="primary">显示选择项</v-btn>
+								</v-col>
+							</v-row>
+						</v-container>
+						<!-- 查询组件 -->
+						<v-container fluid>
+							<v-row>
+								<v-col cols="12">
+									<v-text-field v-model="searchQuery" label="高级检索" outlined dense
+										:hint="searchHint"></v-text-field>
+									<v-btn @click="search" color="primary">搜索</v-btn>
+								</v-col>
+							</v-row>
+						</v-container>
+						<!-- 图式展示组件 -->
+						<v-container fluid>
+							<v-row>
+								<v-col cols="12">
+									<v-card outlined>
+										<v-card-title>
+											知识图谱
+										</v-card-title>
+										<v-card-text>
+											<!-- 展示搜索结果或图式展示的内容 -->
+											<v-list dense v-if="searchResult.length > 0">
+												<v-list-item v-for="(result, index) in searchResult" :key="index">
+													<v-list-item-content>
+														<v-list-item-title>{{ result }}</v-list-item-title>
+													</v-list-item-content>
+												</v-list-item>
+											</v-list>
+											<v-list dense v-else>
+												<v-list-item v-for="(node, index) in graphData" :key="index">
+													<v-list-item-content>
+														<v-list-item-title>{{ node.name }}</v-list-item-title>
+													</v-list-item-content>
+												</v-list-item>
+											</v-list>
+										</v-card-text>
+									</v-card>
+								</v-col>
+							</v-row>
+						</v-container>
 					</v-main>
 
 				</v-app>
 			</div>
-			<script src="../js/psychology_graph.js"></script>
+
 			<script>
 
 			</script>
@@ -171,11 +208,44 @@
 							// 用户操作
 							menuOpen: false,
 							changePasswordDialog: false,
-
+							// 知识图谱
+							searchQuery: '', // 存储用户的搜索查询
+							graphData: [ // 图式展示的示例数据
+								{
+									name: '节点1'
+								},
+								{
+									name: '节点2'
+								},
+								{
+									name: '节点3'
+								}
+							],
+							searchResult: [], // 存储搜索结果
+							searchHint: '支持使用 AND、OR、NOT 等逻辑运算符，或指定检索字段进行高级检索。例如：field1:keyword1 AND field2:keyword2',
+							selectedItem: null, // 选中的项
+							items: ['选项1', '选项2', '选项3', '选项4'] // 列表中的选项
 						}
+
 
 					},
 					methods: {
+						search() {
+							// 模拟查询功能，根据搜索查询更新图式展示组件的数据
+							// 这里可以根据实际情况发送查询请求，然后更新 graphData 数据
+							console.log('搜索查询:', this.searchQuery);
+							// 这里暂时使用示例数据作为搜索结果
+							this.graphData = [{
+									name: '搜索结果1'
+								},
+								{
+									name: '搜索结果2'
+								},
+								{
+									name: '搜索结果3'
+								}
+							];
+						},
 						openDialog() {
 							this.dialog = true;
 						},
@@ -208,6 +278,7 @@
 							this.darkMode = !this.darkMode;
 							// 在这里可以添加切换日夜模式的逻辑
 							this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
+							this.setCookie('darkMode', this.darkMode, 1000)
 						},
 
 						toggleLanguage() {
@@ -253,75 +324,8 @@
 					},
 					mounted() {
 						this.user_id = this.getCookie("user_id");
-
-						const myChart = echarts.init(document.getElementById('graph'));
-
-						const selectNode = document.getElementById('node-select');
-
-						// 添加选项到选择框中
-						p_nodes.forEach(node => {
-							const option = document.createElement('option');
-							option.value = node.name;
-							option.textContent = node.name;
-							selectNode.appendChild(option);
-						});
-
-						// 根据选择的节点重新绘制图形
-						selectNode.addEventListener('change', function() {
-							const selectedNode = this.value;
-							const selectedLinks = p_links.filter(link => link.source === selectedNode || link
-								.target === selectedNode);
-							const relatedNodes = new Set();
-							selectedLinks.forEach(link => {
-								relatedNodes.add(link.source);
-								relatedNodes.add(link.target);
-							});
-							const filteredNodes = p_nodes.filter(node => relatedNodes.has(node.name));
-							myChart.setOption({
-								series: [{
-									type: 'graph',
-									layout: 'force',
-									symbolSize: 40,
-									roam: true,
-									edgeSymbol: ['circle', 'arrow'],
-									edgeSymbolSize: [4, 10],
-									edgeLabel: {
-										show: true,
-										fontSize: 12
-									},
-									data: filteredNodes,
-									links: selectedLinks
-								}]
-							});
-						});
-
-						// 默认只显示第一个节点及其相关的边
-						const defaultNode = p_nodes[0].name;
-						const defaultLinks = p_links.filter(link => link.source === defaultNode || link.target ===
-							defaultNode);
-						const defaultRelatedNodes = new Set();
-						defaultLinks.forEach(link => {
-							defaultRelatedNodes.add(link.source);
-							defaultRelatedNodes.add(link.target);
-						});
-						const defaultFilteredNodes = p_nodes.filter(node => defaultRelatedNodes.has(node.name));
-						myChart.setOption({
-							series: [{
-								type: 'graph',
-								layout: 'force',
-								symbolSize: 40,
-								roam: true,
-								edgeSymbol: ['circle', 'arrow'],
-								edgeSymbolSize: [4, 10],
-								edgeLabel: {
-									show: true,
-									fontSize: 12
-								},
-								data: defaultFilteredNodes,
-								links: defaultLinks
-							}]
-						});
-
+						this.$vuetify.theme.dark = this.getCookie("darkMode");
+						this.darkMode = this.getCookie("darkMode");
 
 					}
 

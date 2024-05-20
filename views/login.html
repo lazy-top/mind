@@ -30,10 +30,10 @@
 								</v-card-title>
 								<v-card-text>
 									<v-form ref="loginForm" v-model="valid" lazy-validation>
-										<v-text-field label="用户名或者邮箱" required :rules="usernameRules"
-											v-model="credentials.username" outlined></v-text-field>
+										<v-text-field label="用户名或者邮箱" required :rules="usernameRules" v-model="username"
+											outlined></v-text-field>
 										<v-text-field label="密码" type="password" required :rules="passwordRules"
-											v-model="credentials.password" outlined></v-text-field>
+											v-model="password" outlined></v-text-field>
 
 										<div>
 											<v-form>
@@ -51,12 +51,12 @@
 												<div style="display: flex;justify-content: space-between;">
 													<div>
 														没有账号?
-														<a href="../04_注册界面/register.html">立即注册</a>
+														<a href="register.html">立即注册</a>
 													</div>
 
 													<span>
-														登录即代表同意<a href="../15_用户协议/contract.html">心聆守护用户协议</a>和<a
-															href="../18_隐私政策/index.html">隐私政策</a>
+														登录即代表同意<a href="contract.html">心聆守护用户协议</a>和<a
+															href="Privacy_Policy.html">隐私政策</a>
 													</span>
 												</div>
 											</v-form>
@@ -83,11 +83,15 @@
 				return {
 					showToast: false,
 					errorMessage: '账号密码错误',
+					url: 'http://8.134.48.111:8000/api',
 					showRegister: false,
 					credentials: {
 						username: '',
 						password: ''
 					},
+					userId: 0,
+					username: "",
+					password: "",
 					rememberMe: false,
 					valid: false,
 					usernameRules: [
@@ -98,32 +102,50 @@
 					passwordRules: [
 						v => !!v || '密码不能为空',
 						// 可添加其他规则，如长度限制、特殊字符要求
-						v => /^[a-zA-Z0-9_-]{6,16}$/.test(v) || '密码格式不正确'
+						v => /^[a-zA-Z0-9_-]{5,16}$/.test(v) || '密码格式不正确'
 					]
 				};
 			},
 			methods: {
 				// 在这里添加方法
+				setCookie(name, value, days) {
+					// 初始化expires
+					let expires = "";
+					// 如果传入了days参数
+					if (days) {
+						// 创建一个Date对象
+						const date = new Date();
+						// 设置date对象的值，加上days参数的值，转换为毫秒数
+						date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+						// 设置expires的值为分号空格，加上date对象转换为UTC时间格式
+						expires = "; expires=" + date.toUTCString();
+					}
+					// 设置cookie，参数为name，value，expires
+					document.cookie = name + "=" + (value || "") + expires + "; path=/";
+				},
 				submitLogin() {
 					if (this.$refs.loginForm.validate()) {
 						// 发送登录请求至后端 API，使用 this.credentials 作为请求数据
-						axios.post('/user/login', this.credentials)
+						axios.post(`${this.url}/user/login`, {
+								username: this.username,
+								password: this.password
+							})
 							.then(response => {
-								res = response.response.data;
-								// 处理登录成功逻辑，如保存 token、跳转至首页等
-								if (res.code == 200) {
-									// 登录成功，保存 token 到本地存储
-									localStorage.setItem('token', res.data.access_token);
-									// 跳转至首页
-									this.$router.push('/chat');
+								const data = response.data;
+								if (data.code === 200) {
+									const userData = data.data;
+									this.setCookie("isAuthenticated", true, 1);
+									this.setCookie("user_id", userData.id, 1);
+									this.userId = userData.id;
+									this.setCookie("username", userData.username, 1);
+									this.username = userData.username;
+									window.location.href = 'chat.html';
+								} else {
+									console.error('Login failed:', response);
 								}
 							})
 							.catch(error => {
-								console.log(error);
-								// 获取error返回的response的数据
-								res = error.response.data;
-								// 使用vuetify的提示框,展示错误信息
-								this.errorMessage = res.msg;
+								this.errorMessage = error.message;
 								this.showToast = true;
 							});
 					}

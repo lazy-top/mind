@@ -9,6 +9,7 @@
 		<script src="../js/socket.io.min.js"></script>
 		<script src="../js/axios.min.js"></script>
 		<script src="../js/vuex.global.min.js"></script>
+		<script src="../js/global_login.js"></script>
 		<!-- 引入 Vuetify 的 CSS -->
 		<link href="../css/materialdesignicons.min.css" rel="stylesheet">
 		<link href="../css/vuetify.min.css" rel="stylesheet">
@@ -19,12 +20,6 @@
 		<div id="app">
 			<!-- 用户操作 -->
 			<v-menu v-model="menuOpen" :close-on-content-click="false" :nudge-right="40" offset-y>
-				<template v-slot:activator="{ on }">
-					<v-btn v-on="on" color="primary" dark>
-						<v-icon>mdi-dots-vertical</v-icon>
-					</v-btn>
-				</template>
-
 				<v-list>
 					<v-list-item @click="viewProfile">
 						<v-list-item-icon>
@@ -154,34 +149,53 @@
 						<v-tab>自由创作</v-tab>
 
 						<v-tab-item>
-							<v-card-title>创建新助手</v-card-title>
-							<v-card-text>
-								<!-- 自定义选项卡内容 -->
-								<v-text-field label="姓名" outlined prepend-inner-icon="mdi-account"
-									v-model="assistant.name" maxlength="20"></v-text-field>
-								<v-text-field label="描述" outlined prepend-inner-icon="mdi-information"
-									v-model="assistant.description" maxlength="200"></v-text-field>
-								<v-text-field label="功能" outlined prepend-inner-icon="mdi-cog"
-									v-model="assistant.function" maxlength="200"></v-text-field>
-								<v-text-field label="个人信息" outlined prepend-inner-icon="mdi-account-details"
-									v-model="assistant.personalInfo" maxlength="200"></v-text-field>
-							</v-card-text>
-							<v-card-actions>
-								<v-btn color="primary" @click="saveAssistant">创建</v-btn>
-								<v-btn @click="closeAssistantDialog">取消</v-btn>
-							</v-card-actions>
+							<v-card>
+								<v-card-title>创建新助手</v-card-title>
+								<v-card-text>
+									<v-row dense>
+										<v-col cols="12">
+											<v-text-field label="姓名" outlined prepend-inner-icon="mdi-account"
+												v-model="assistant.name" maxlength="20"></v-text-field>
+										</v-col>
+										<v-col cols="12">
+											<v-text-field label="描述" outlined prepend-inner-icon="mdi-information"
+												v-model="assistant.description" maxlength="200"></v-text-field>
+										</v-col>
+										<v-col cols="12">
+											<v-text-field label="功能" outlined prepend-inner-icon="mdi-cog"
+												v-model="assistant.function" maxlength="200"></v-text-field>
+										</v-col>
+										<v-col cols="12">
+											<v-text-field label="个人信息" outlined prepend-inner-icon="mdi-account-details"
+												v-model="assistant.personalInfo" maxlength="200"></v-text-field>
+										</v-col>
+									</v-row>
+								</v-card-text>
+								<v-card-actions class="justify-end">
+									<v-btn color="primary" @click="saveAssistant">创建</v-btn>
+									<v-btn @click="closeAssistantDialog">取消</v-btn>
+								</v-card-actions>
+							</v-card>
 						</v-tab-item>
 
 						<v-tab-item>
-							<!-- 自由创作选项卡内容 -->
-							<v-card-title>自由创作</v-card-title>
-							<v-card-text>
-								<!-- 这里放置自由创作的内容 -->
-							</v-card-text>
-							<v-card-actions>
-								<!-- 自由创作选项卡的按钮 -->
-							</v-card-actions>
+							<v-card>
+								<v-card-title>自由创作</v-card-title>
+								<v-card-text>
+									<v-row dense>
+										<v-col cols="12">
+											<v-textarea label="请输入内容" v-model="textContent" clearable auto-grow outlined
+												rows="3"></v-textarea>
+										</v-col>
+									</v-row>
+								</v-card-text>
+								<v-card-actions class="justify-end">
+									<v-btn color="primary" @click="createContent">创建</v-btn>
+									<v-btn @click="closeAssistantDialog">取消</v-btn>
+								</v-card-actions>
+							</v-card>
 						</v-tab-item>
+
 					</v-tabs>
 				</v-card>
 			</v-dialog>
@@ -207,11 +221,16 @@
 				</v-system-bar>
 
 				<v-app-bar app clipped-right flat height="72">
+					<v-icon :color="moodColor" @click="toggleMood">{{ moodIcon }}</v-icon>
 					<v-toolbar-title>{{ chatTitle }}</v-toolbar-title>
 					<v-spacer></v-spacer>
-
-					<!-- 右侧图标按钮 -->
-					<v-icon @click="toggleMood">mdi-emoticon-outline</v-icon>
+					<v-tooltip bottom>
+						<!-- 右侧沉浸模式按钮 -->
+						<template v-slot:activator="{ on }">
+							<v-icon v-on="on" class="icon">mdi-fullscreen</v-icon>
+						</template>
+						<span>沉浸模式</span>
+					</v-tooltip>
 				</v-app-bar>
 
 				<v-navigation-drawer v-model="drawer" app width="300">
@@ -297,32 +316,63 @@
 
 
 				<v-main>
-					<!--  -->
 
 					<!-- 消息列表 -->
 					<v-container id="message-list" style="padding-bottom: 60px;overflow-y: auto;">
-
 						<v-row v-for="(message, index) in messages" :key="index">
-							<v-col cols="auto">
-								<v-avatar size="40">
-									<img :src="message.sender === 'robot' ? '../img/a-lovely-robot.png' : '../img/a-lovely-human-being.png'"
-										alt="Avatar">
-								</v-avatar>
-							</v-col>
-							<v-col>
+							<v-col cols="12">
 								<div>
-									<span style="font-weight: bold;">{{ message.sender === 'robot' ? '小海' :
-					                                                    '你' }}</span>
+									<v-avatar size="40">
+										<img :src="message.sender === 'robot' ? '../img/a-lovely-robot.png' : '../img/a-lovely-human-being.png'"
+											alt="Avatar">
+									</v-avatar>
+									<span
+										style="font-weight: bold;">{{ message.sender === 'robot' ? '小海' : '你' }}</span>
 									<!-- 如果消息为 ，显示加载中的进度圆 -->
 									<v-progress-circular
-										v-if="message.content === '思考中...' || message.content === '初始化心理助手...'||message.content === '查询心理学知识库中...'"
+										v-if="message.content === '思考中...' || message.content === '初始化心理助手...' || message.content === '查询心理学知识库中...'"
 										indeterminate color="primary" size="16"></v-progress-circular>
 								</div>
 								<div>
 									<span>{{ message.content }}</span>
 								</div>
+								<div class="icon-container">
+									<!-- 复制文本的图标 -->
+									<v-tooltip bottom v-if="message.sender === 'robot'">
+										<template v-slot:activator="{ on }">
+											<v-icon v-on="on" size="18"
+												class="icon mdi-content-copy" @click="copyToClipboard(message.content)">mdi-content-copy</v-icon>
+										</template>
+										<span>复制文本</span>
+									</v-tooltip>
+									<!-- 决策树的图标 -->
+									<v-tooltip bottom v-if="message.sender === 'robot'">
+										<template v-slot:activator="{ on }">
+											<v-icon v-on="on" size="18"
+												class="icon mdi-shape-outline">mdi-shape-outline</v-icon>
+										</template>
+										<span>决策树</span>
+									</v-tooltip>
+									<!-- 倒赞的图标 -->
+									<v-tooltip bottom v-if="message.sender === 'robot'">
+										<template v-slot:activator="{ on }">
+											<v-icon v-on="on" size="18"
+												class="icon mdi-thumb-down-outline" @click="daozan(message)">mdi-thumb-down-outline</v-icon>
+										</template>
+										<span>倒赞</span>
+									</v-tooltip>
+									<!-- 语音播放的图标 -->
+<!-- 									<v-tooltip bottom v-if="message.sender === 'robot'">
+										<template v-slot:activator="{ on }">
+											<v-icon v-on="on" size="18"
+												class="icon mdi-play-circle-outline">mdi-play-circle-outline</v-icon>
+										</template>
+										<span>语音播放</span>
+									</v-tooltip> -->
+								</div>
 							</v-col>
 						</v-row>
+
 					</v-container>
 
 				</v-main>
@@ -342,7 +392,9 @@
 					</div>
 				</v-footer>
 			</v-app>
+
 		</div>
+		
 		<style>
 			/* #region图标 */
 			@font-face {
@@ -430,6 +482,22 @@
 			.theme--dark .immerse:hover {
 				background-color: #383838;
 			}
+
+			.icon-container {
+				display: flex;
+				justify-content: flex-start;
+				margin-top: 5px;
+				/* 添加一点间距 */
+			}
+
+			.icon {
+				cursor: pointer;
+				/* 添加鼠标手型 */
+				margin-right: 10px;
+				/* 添加图标之间的间距 */
+				font-size: 10px;
+				/* 调整图标大小 */
+			}
 		</style>
 
 		<script>
@@ -494,10 +562,16 @@
 						language: true,
 						mood: 'mdi-emoticon-happy-outline',
 						url: 'http://8.134.48.111:8000/api',
+						// 心情
+						moodIcon: "mdi-emoticon-outline",
+						moodColor: "black",
+						immersiveMode: false
 
 					};
 				},
 				mounted() {
+					this.darkMode = this.getCookie("darkMode");
+					this.$vuetify.theme.dark= this.getCookie("darkMode");
 
 					this.checkAuthentication();
 					window.addEventListener('keydown', this.handleHotkey);
@@ -508,6 +582,19 @@
 					}
 				},
 				methods: {
+					daozan(message){
+						this.errorMessage = '反馈成功，谢谢！';
+						this.showToast = true;
+					},
+					  copyToClipboard(text) {
+					    navigator.clipboard.writeText(text).then(() => {
+							this.errorMessage = '文本已复制到剪贴板';
+							this.showToast = true;
+					    }).catch(err => {
+							this.errorMessage = '复制失败，请重试！'+err;
+							this.showToast = true;
+					    });
+					  },
 					// 检查用户登录状态
 					checkAuthentication() {
 						if (!this.getCookie("isAuthenticated")) {
@@ -665,13 +752,13 @@
 						this.loginDialog = !this.loginDialog;
 					},
 					toggleMood() {
-						// 根据当前心情状态切换图标
-						if (this.mood === 'mdi-emoticon-happy-outline') {
-							this.mood = 'mdi-emoticon-neutral-outline'; // 切换到一般心情图标
-						} else if (this.mood === 'mdi-emoticon-neutral-outline') {
-							this.mood = 'mdi-emoticon-sad-outline'; // 切换到坏心情图标
+						// 切换心情图标和颜色
+						if (this.moodIcon === "mdi-emoticon-outline") {
+							this.moodIcon = "mdi-emoticon-happy-outline";
+							this.moodColor = "yellow";
 						} else {
-							this.mood = 'mdi-emoticon-happy-outline'; // 切换到好心情图标
+							this.moodIcon = "mdi-emoticon-outline";
+							this.moodColor = "black";
 						}
 					},
 					topage(route) {
@@ -682,6 +769,7 @@
 					toggleDarkMode() {
 						this.darkMode = !this.darkMode;
 						this.$vuetify.theme.dark = this.darkMode;
+						this.setCookie('darkMode', this.darkMode, 1000)
 					},
 					// 切换语言
 					toggleLanguage() {
@@ -763,7 +851,7 @@
 						});
 					},
 					async sendMessage() {
-						let sendMessage=this.newMessage;
+						let sendMessage = this.newMessage;
 						if (!this.newMessage.trim()) {
 							this.vuetify.dialog.alert('请输入消息内容');
 							return;
@@ -800,12 +888,12 @@
 							});
 
 							const data = aiResponse.data.assistant;
-							this.updateUI(data,sendMessage);
+							this.updateUI(data, sendMessage);
 						} catch (error) {
 							console.error('Error:', error);
 						}
 					},
-					async updateUI(data,sendMessage) {
+					async updateUI(data, sendMessage) {
 						try {
 							let response;
 							let content = '';

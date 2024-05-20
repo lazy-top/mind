@@ -11,7 +11,7 @@
 		<script src="../js/vue-router.global.js"></script>
 		<script src="../js/vuex.global.min.js"></script>
 		<script src="../js/echarts.min.js"></script>
-
+		<script src="../js/global_login.js"></script>
 		<!-- 引入 Vuetify 的 CSS -->
 		<link href="../css/materialdesignicons.min.css" rel="stylesheet">
 		<link href="../css/vuetify.min.css" rel="stylesheet">
@@ -21,13 +21,33 @@
 	<body>
 
 		<div id="app">
-			
-			
-
+			<!-- 用户操作 -->
+			<v-menu v-model="menuOpen" :close-on-content-click="false" :nudge-right="40" offset-y>
+				<v-list>
+					<v-list-item @click="viewProfile">
+						<v-list-item-icon>
+							<v-icon>mdi-account</v-icon>
+						</v-list-item-icon>
+						<v-list-item-title>查看个人资料</v-list-item-title>
+					</v-list-item>
+					<v-list-item @click="changePassword">
+						<v-list-item-icon>
+							<v-icon>mdi-lock</v-icon>
+						</v-list-item-icon>
+						<v-list-item-title>修改密码</v-list-item-title>
+					</v-list-item>
+					<v-divider></v-divider>
+					<v-list-item @click="logout">
+						<v-list-item-icon>
+							<v-icon>mdi-logout</v-icon>
+						</v-list-item-icon>
+						<v-list-item-title>退出登录</v-list-item-title>
+					</v-list-item>
+				</v-list>
+			</v-menu>
 			<!-- App.vue 根组件 -->
-			
 			<v-app>
-				
+
 				<v-system-bar app>
 					<v-spacer></v-spacer>
 					<v-btn icon>
@@ -48,10 +68,10 @@
 
 
 				<v-navigation-drawer v-model="drawer" app absolute mini-variant>
-						<v-avatar class="d-block text-center mx-auto mt-4" size="36" @click="toggleMenu"
-							style="cursor: pointer;">
-							<v-img src="../img/a-lovely-human-being.png" alt="User Avatar"></v-img>
-						</v-avatar>
+					<v-avatar class="d-block text-center mx-auto mt-4" size="36" @click="toggleMenu"
+						style="cursor: pointer;">
+						<v-img src="../img/a-lovely-human-being.png" alt="User Avatar"></v-img>
+					</v-avatar>
 
 					<v-divider class="mx-3 my-5"></v-divider>
 
@@ -157,21 +177,7 @@
 
 					<v-row>
 						<v-col cols="12">
-							<ul class="message-list">
-								<!-- 历史消息的列表项 -->
-								<li v-for="(message, index) in displayedMessages" :key="index" class="message-item">
-									<!-- 添加头像 -->
-									<v-avatar size="40">
-										<img src="../img/a-lovely-human-being.png" alt="Avatar" class="avatar">
-									</v-avatar>
-									<span class="message-content">{{ message.content }}</span> - <span
-										class="message-time">{{ message.create_at }}</span>
-								</li>
-								<!-- 使用图标替换省略号 -->
-								<li v-if="showEllipsis" class="ellipsis">
-									<v-icon class="ellipsis-icon">mdi-dots-vertical</v-icon>
-								</li>
-							</ul>
+							<div id="messagesListChart" style="height: 300px;"></div>
 						</v-col>
 					</v-row>
 
@@ -182,8 +188,9 @@
 		<style>
 			canvas {
 				border: 1px solid #ccc;
-			},
-			
+			}
+
+			,
 		</style>
 		<script>
 			new Vue({
@@ -211,6 +218,11 @@
 						// 用户操作
 						menuOpen: false,
 						changePasswordDialog: false,
+						// 消息line
+						messagesChartData: {
+							dates: [], // 时间数据
+							messageCounts: [] // 消息数量数据
+						}
 					}
 				},
 				computed: {
@@ -244,6 +256,8 @@
 					getData() {
 						this.fetchData('/message/me_detail', data => {
 							this.historyMessages = data.data;
+							// 处理数据
+							this.processMessages(this.historyMessages);
 						});
 					},
 					// 获取echart数据
@@ -298,6 +312,7 @@
 					toggleDarkMode() {
 						this.darkMode = !this.darkMode;
 						this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
+						this.setCookie('darkMode', this.darkMode, 1000)
 					},
 					// 切换语言
 					toggleLanguage() {
@@ -432,12 +447,36 @@
 						this.password = '';
 						this.confirmPassword = '';
 						this.error = '';
+					},
+					processMessages(messages) {
+						// 初始化数据结构
+						const timeInfoMap = {};
+
+						// 遍历消息，按时间统计信息量
+						messages.forEach(message => {
+							const date = new Date(message.create_at);
+							const key = date.toISOString().split('T')[0]; // 获取日期部分
+							if (!timeInfoMap[key]) {
+								timeInfoMap[key] = 0;
+							}
+							timeInfoMap[key]++;
+						});
+
+						// 准备图表数据
+						this.messagesChartData.dates = Object.keys(timeInfoMap).sort();
+						this.messagesChartData.messageCounts = this.messagesChartData.dates.map(date => timeInfoMap[
+							date]);
+						this.initializeLineChart('messagesListChart', '', this.messagesChartData.dates, this
+							.messagesChartData.messageCounts)
 					}
+
 				},
 				beforeDestroy() {
 					// 添加逻辑
 				},
 				mounted() {
+					this.darkMode = this.getCookie("darkMode");
+					this.$vuetify.theme.dark= this.getCookie("darkMode");
 					this.user_id = this.getCookie("user_id");
 					this.getData();
 					this.get_echart_data();
