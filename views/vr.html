@@ -20,7 +20,40 @@
 	<body>
 		<div id="app">
 
-
+			<!-- 查看个人资料对话框 -->
+			<v-dialog v-model="profileDialog" max-width="500px">
+				<v-card>
+					<v-card-title>个人资料</v-card-title>
+					<v-card-text>
+						<v-form ref="profileForm">
+							<v-text-field label="用户名" v-model="userProfile.username" readonly></v-text-field>
+							<v-text-field label="邮箱" v-model="userProfile.email" readonly></v-text-field>
+						</v-form>
+					</v-card-text>
+					<v-card-actions>
+						<v-btn color="primary" @click="profileDialog = false">关闭</v-btn>
+					</v-card-actions>
+				</v-card>
+			</v-dialog>
+			<!-- 修改密码对话框 -->
+			<v-dialog v-model="passwordDialog" max-width="500px">
+				<v-card>
+					<v-card-title>修改密码</v-card-title>
+					<v-card-text>
+						<v-form ref="passwordForm">
+							<v-text-field label="当前密码" v-model="passwordForm.currentPassword"
+								type="password"></v-text-field>
+							<v-text-field label="新密码" v-model="passwordForm.newPassword" type="password"></v-text-field>
+							<v-text-field label="确认新密码" v-model="passwordForm.confirmPassword"
+								type="password"></v-text-field>
+						</v-form>
+					</v-card-text>
+					<v-card-actions>
+						<v-btn color="primary" @click="changePasswordConfirm">确认</v-btn>
+						<v-btn text @click="closePasswordDialog">取消</v-btn>
+					</v-card-actions>
+				</v-card>
+			</v-dialog>
 
 			<!-- 用户操作 -->
 			<v-menu v-model="menuOpen" :close-on-content-click="false" :nudge-right="40" offset-y>
@@ -161,6 +194,17 @@
 				}),
 				data() {
 					return {
+						// 个人资料
+						profileDialog: false,
+						userProfile: {
+							username: '用户123', // 示例数据
+							email: 'user123@example.com' // 示例数据
+						},
+						passwordForm: {
+							currentPassword: '',
+							newPassword: '',
+							confirmPassword: ''
+						},
 						// 你的数据属性
 						url: "http://8.134.48.111:8000/api",
 						user_id: 0,
@@ -177,6 +221,12 @@
 
 				},
 				methods: {
+					// 查看个人信息
+					viewProfile() {
+						// Add logic to view profile
+						this.profileDialog = true;
+						this.menuOpen = false;
+					},
 					openDialog() {
 						this.dialog = true;
 					},

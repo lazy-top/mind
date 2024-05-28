@@ -131,7 +131,7 @@
                             }
                         }, 1000);
 
-                        axios.post(this.userDetails.url + "/send-code", {
+                        axios.post(this.userDetails.url + "/user/code", {
                             email: this.userDetails.email
                         }).then(response => {
                             if (response.data.code === 200) {

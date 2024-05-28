@@ -22,7 +22,76 @@
 		<body>
 			<div id="app">
 
+				<!-- 查看个人资料对话框 -->
+				<v-dialog v-model="profileDialog" max-width="500px">
+					<v-card>
+						<v-card-title>个人资料</v-card-title>
+						<v-card-text>
+							<v-form ref="profileForm">
+								<v-text-field label="用户名" v-model="userProfile.username" readonly></v-text-field>
+								<v-text-field label="邮箱" v-model="userProfile.email" readonly></v-text-field>
+							</v-form>
+						</v-card-text>
+						<v-card-actions>
+							<v-btn color="primary" @click="profileDialog = false">关闭</v-btn>
+						</v-card-actions>
+					</v-card>
+				</v-dialog>
 
+			<!-- 修改密码对话框 -->
+			<v-dialog v-model="passwordDialog" max-width="500px">
+				<v-card>
+					<v-card-title>修改密码</v-card-title>
+					<v-card-text>
+						<v-form ref="passwordForm">
+							<v-text-field label="当前密码" v-model="passwordForm.currentPassword"
+								type="password"></v-text-field>
+							<v-text-field label="新密码" v-model="passwordForm.newPassword" type="password"></v-text-field>
+							<v-text-field label="确认新密码" v-model="passwordForm.confirmPassword"
+								type="password"></v-text-field>
+						</v-form>
+					</v-card-text>
+					<v-card-actions>
+						<v-btn color="primary" @click="changePasswordConfirm">确认</v-btn>
+						<v-btn text @click="closePasswordDialog">取消</v-btn>
+					</v-card-actions>
+				</v-card>
+			</v-dialog> <!-- 查看个人资料对话框 -->
+				<v-dialog v-model="profileDialog" max-width="500px">
+					<v-card>
+						<v-card-title>个人资料</v-card-title>
+						<v-card-text>
+							<v-form ref="profileForm">
+								<v-text-field label="用户名" v-model="userProfile.username" readonly></v-text-field>
+								<v-text-field label="邮箱" v-model="userProfile.email" readonly></v-text-field>
+							</v-form>
+						</v-card-text>
+						<v-card-actions>
+							<v-btn color="primary" @click="profileDialog = false">关闭</v-btn>
+						</v-card-actions>
+					</v-card>
+				</v-dialog>
+
+				<!-- 修改密码对话框 -->
+				<v-dialog v-model="passwordDialog" max-width="500px">
+					<v-card>
+						<v-card-title>修改密码</v-card-title>
+						<v-card-text>
+							<v-form ref="passwordForm">
+								<v-text-field label="当前密码" v-model="passwordForm.currentPassword"
+									type="password"></v-text-field>
+								<v-text-field label="新密码" v-model="passwordForm.newPassword"
+									type="password"></v-text-field>
+								<v-text-field label="确认新密码" v-model="passwordForm.confirmPassword"
+									type="password"></v-text-field>
+							</v-form>
+						</v-card-text>
+						<v-card-actions>
+							<v-btn color="primary" @click="changePasswordConfirm">确认</v-btn>
+							<v-btn text @click="passwordDialog = false">取消</v-btn>
+						</v-card-actions>
+					</v-card>
+				</v-dialog>
 				<!-- 用户操作 -->
 				<v-menu v-model="menuOpen" :close-on-content-click="false" :nudge-right="40" offset-y>
 					<v-list>
@@ -174,6 +243,8 @@
 													</v-list-item-content>
 												</v-list-item>
 											</v-list>
+											<v-treeview :items="decisionTree" open-all activatable item-key="id"
+												:active.sync="active" @update:active="highlightNode"></v-treeview>
 										</v-card-text>
 									</v-card>
 								</v-col>
@@ -197,6 +268,17 @@
 					}),
 					data() {
 						return {
+							// 个人资料
+							profileDialog: false,
+							userProfile: {
+								username: '用户123', // 示例数据
+								email: 'user123@example.com' // 示例数据
+							},
+							passwordForm: {
+								currentPassword: '',
+								newPassword: '',
+								confirmPassword: ''
+							},
 							// 你的数据属性
 							url: "http://8.134.48.111:8000/api",
 							user_id: 0,
@@ -221,6 +303,39 @@
 									name: '节点3'
 								}
 							],
+							decisionTree: [{
+								id: 1,
+								name: 'Start',
+								children: [{
+										id: 2,
+										name: 'Option A',
+										children: [{
+												id: 4,
+												name: 'Result A1'
+											},
+											{
+												id: 5,
+												name: 'Result A2'
+											}
+										]
+									},
+									{
+										id: 3,
+										name: 'Option B',
+										children: [{
+												id: 6,
+												name: 'Result B1'
+											},
+											{
+												id: 7,
+												name: 'Result B2'
+											}
+										]
+									}
+								]
+							}],
+							active: [],
+							highlightedNode: null,
 							searchResult: [], // 存储搜索结果
 							searchHint: '支持使用 AND、OR、NOT 等逻辑运算符，或指定检索字段进行高级检索。例如：field1:keyword1 AND field2:keyword2',
 							selectedItem: null, // 选中的项
@@ -230,6 +345,27 @@
 
 					},
 					methods: {
+						// 查看个人信息
+						viewProfile() {
+							// Add logic to view profile
+							this.profileDialog = true;
+							this.menuOpen = false;
+						},
+						highlightNode(nodeIds) {
+							// Remove previous highlight
+							if (this.highlightedNode) {
+								this.highlightedNode.classList.remove('highlight');
+							}
+							// Add new highlight
+							if (nodeIds.length > 0) {
+								const nodeId = nodeIds[0];
+								const node = document.getElementById(`node-${nodeId}`);
+								if (node) {
+									node.classList.add('highlight');
+									this.highlightedNode = node;
+								}
+							}
+						},
 						search() {
 							// 模拟查询功能，根据搜索查询更新图式展示组件的数据
 							// 这里可以根据实际情况发送查询请求，然后更新 graphData 数据

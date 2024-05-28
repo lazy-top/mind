@@ -10,16 +10,24 @@
 		<script src="../js/axios.min.js"></script>
 		<script src="../js/vuex.global.min.js"></script>
 		<script src="../js/global_login.js"></script>
+		<link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+		<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 		<!-- 引入 Vuetify 的 CSS -->
 		<link href="../css/materialdesignicons.min.css" rel="stylesheet">
 		<link href="../css/vuetify.min.css" rel="stylesheet">
 		<meta name="viewport"
 			content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+
 	</head>
 	<body>
 		<div id="app">
 			<!-- 用户操作 -->
 			<v-menu v-model="menuOpen" :close-on-content-click="false" :nudge-right="40" offset-y>
+				<template v-slot:activator="{ on }">
+					<v-btn icon v-on="on">
+						<v-icon>mdi-dots-vertical</v-icon>
+					</v-btn>
+				</template>
 				<v-list>
 					<v-list-item @click="viewProfile">
 						<v-list-item-icon>
@@ -42,6 +50,24 @@
 					</v-list-item>
 				</v-list>
 			</v-menu>
+
+			<!-- 查看个人资料对话框 -->
+			<v-dialog v-model="profileDialog" max-width="500px">
+				<v-card>
+					<v-card-title>个人资料</v-card-title>
+					<v-card-text>
+						<v-form ref="profileForm">
+							<v-text-field label="用户名" v-model="userProfile.username" readonly></v-text-field>
+							<v-text-field label="邮箱" v-model="userProfile.email" readonly></v-text-field>
+						</v-form>
+					</v-card-text>
+					<v-card-actions>
+						<v-btn color="primary" @click="profileDialog = false">关闭</v-btn>
+					</v-card-actions>
+				</v-card>
+			</v-dialog>
+
+
 			<!-- 系统设置 -->
 			<v-dialog v-model="settingsDialog" max-width="500">
 				<v-card>
@@ -64,24 +90,22 @@
 					</v-card-actions>
 				</v-card>
 			</v-dialog>
-			<!-- 修改密码 -->
-			<v-dialog v-model="changePasswordDialog" max-width="500px">
+			<!-- 修改密码对话框 -->
+			<v-dialog v-model="passwordDialog" max-width="500px">
 				<v-card>
 					<v-card-title>修改密码</v-card-title>
 					<v-card-text>
-						<!-- 修改密码表单 -->
-						<v-form ref="form" @submit.prevent="submitPassword">
-							<v-text-field v-model="password" label="新密码" type="password"></v-text-field>
-							<v-text-field v-model="confirmPassword" label="确认密码" type="password"></v-text-field>
-							<!-- 错误提示 -->
-							<v-alert v-if="error" type="error">{{ error }}</v-alert>
+						<v-form ref="passwordForm">
+							<v-text-field label="当前密码" v-model="passwordForm.currentPassword"
+								type="password"></v-text-field>
+							<v-text-field label="新密码" v-model="passwordForm.newPassword" type="password"></v-text-field>
+							<v-text-field label="确认新密码" v-model="passwordForm.confirmPassword"
+								type="password"></v-text-field>
 						</v-form>
 					</v-card-text>
 					<v-card-actions>
-						<!-- 取消按钮 -->
-						<v-btn color="red darken-1" @click="dialog = false">取消</v-btn>
-						<!-- 提交按钮 -->
-						<v-btn color="primary" @click="submitPassword">提交</v-btn>
+						<v-btn color="primary" @click="changePasswordConfirm">确认</v-btn>
+						<v-btn text @click="closePasswordDialog">取消</v-btn>
 					</v-card-actions>
 				</v-card>
 			</v-dialog>
@@ -139,14 +163,27 @@
 
 
 
-
+			<!-- 决策树 -->
+			<v-dialog v-model="showTreeDialog" max-width="1000px" @opened="drawDecisionTree">
+				<v-card>
+					<v-card-title>决策树</v-card-title>
+					<v-card-text>
+						<svg width="960" height="600"></svg>
+						<script src="https://d3js.org/d3.v7.min.js"></script>
+						<script src="../js/tree.js"></script>
+					</v-card-text>
+					<v-card-actions>
+						<v-btn color="primary" @click="showTreeDialog = false">关闭</v-btn>
+					</v-card-actions>
+				</v-card>
+			</v-dialog>
 
 			<!--创建助手-->
 			<v-dialog v-model="assistantDialog" max-width="500">
 				<v-card>
 					<v-tabs v-model="tab">
 						<v-tab>自定义</v-tab>
-						<v-tab>自由创作</v-tab>
+						<!-- 						<v-tab>自由创作</v-tab> -->
 
 						<v-tab-item>
 							<v-card>
@@ -167,7 +204,7 @@
 										</v-col>
 										<v-col cols="12">
 											<v-text-field label="个人信息" outlined prepend-inner-icon="mdi-account-details"
-												v-model="assistant.personalInfo" maxlength="200"></v-text-field>
+												v-model="assistant.user_detail" maxlength="200"></v-text-field>
 										</v-col>
 									</v-row>
 								</v-card-text>
@@ -177,7 +214,7 @@
 								</v-card-actions>
 							</v-card>
 						</v-tab-item>
-
+						<!-- 
 						<v-tab-item>
 							<v-card>
 								<v-card-title>自由创作</v-card-title>
@@ -194,7 +231,7 @@
 									<v-btn @click="closeAssistantDialog">取消</v-btn>
 								</v-card-actions>
 							</v-card>
-						</v-tab-item>
+						</v-tab-item> -->
 
 					</v-tabs>
 				</v-card>
@@ -230,6 +267,13 @@
 							<v-icon v-on="on" class="icon">mdi-fullscreen</v-icon>
 						</template>
 						<span>沉浸模式</span>
+					</v-tooltip>
+					<!-- 删除聊天记录的图标按钮 -->
+					<v-tooltip bottom>
+						<template v-slot:activator="{ on }">
+							<v-icon v-on="on" class="icon" @click="clearChatHistory">mdi-delete</v-icon>
+						</template>
+						<span>删除聊天记录</span>
 					</v-tooltip>
 				</v-app-bar>
 
@@ -318,7 +362,7 @@
 				<v-main>
 
 					<!-- 消息列表 -->
-					<v-container id="message-list" style="padding-bottom: 60px;overflow-y: auto;">
+					<v-container id="message-list" style="padding-bottom: 60px; overflow-y: auto;">
 						<v-row v-for="(message, index) in messages" :key="index">
 							<v-col cols="12">
 								<div>
@@ -336,43 +380,45 @@
 								<div>
 									<span>{{ message.content }}</span>
 								</div>
+								<div v-if="message.content === '查询心理学知识库中...'" class="query-link-box">
+									<v-btn :href="generateQueryLink(message)" target="_blank" color="primary"
+										small>查看查询结果</v-btn>
+								</div>
 								<div class="icon-container">
 									<!-- 复制文本的图标 -->
 									<v-tooltip bottom v-if="message.sender === 'robot'">
 										<template v-slot:activator="{ on }">
-											<v-icon v-on="on" size="18"
-												class="icon mdi-content-copy" @click="copyToClipboard(message.content)">mdi-content-copy</v-icon>
+											<v-icon v-on="on" size="18" class="icon mdi-content-copy"
+												@click="copyToClipboard(message.content)">mdi-content-copy</v-icon>
 										</template>
 										<span>复制文本</span>
 									</v-tooltip>
 									<!-- 决策树的图标 -->
 									<v-tooltip bottom v-if="message.sender === 'robot'">
 										<template v-slot:activator="{ on }">
-											<v-icon v-on="on" size="18"
-												class="icon mdi-shape-outline">mdi-shape-outline</v-icon>
+											<v-icon v-on="on" size="18" class="icon mdi-shape-outline"
+												@click="showTreeDialog = true">mdi-shape-outline</v-icon>
 										</template>
 										<span>决策树</span>
 									</v-tooltip>
 									<!-- 倒赞的图标 -->
 									<v-tooltip bottom v-if="message.sender === 'robot'">
 										<template v-slot:activator="{ on }">
-											<v-icon v-on="on" size="18"
-												class="icon mdi-thumb-down-outline" @click="daozan(message)">mdi-thumb-down-outline</v-icon>
+											<v-icon v-on="on" size="18" class="icon mdi-thumb-down-outline"
+												@click="daozan(message)">mdi-thumb-down-outline</v-icon>
 										</template>
 										<span>倒赞</span>
 									</v-tooltip>
 									<!-- 语音播放的图标 -->
-<!-- 									<v-tooltip bottom v-if="message.sender === 'robot'">
-										<template v-slot:activator="{ on }">
-											<v-icon v-on="on" size="18"
-												class="icon mdi-play-circle-outline">mdi-play-circle-outline</v-icon>
-										</template>
-										<span>语音播放</span>
-									</v-tooltip> -->
+									<!-- <v-tooltip bottom v-if="message.sender === 'robot'">
+            <template v-slot:activator="{ on }">
+              <v-icon v-on="on" size="18" class="icon mdi-play-circle-outline">mdi-play-circle-outline</v-icon>
+            </template>
+            <span>语音播放</span>
+          </v-tooltip> -->
 								</div>
 							</v-col>
 						</v-row>
-
 					</v-container>
 
 				</v-main>
@@ -394,7 +440,35 @@
 			</v-app>
 
 		</div>
-		
+
+		<style>
+			.node circle {
+				fill: #fff;
+				stroke: steelblue;
+				stroke-width: 3px;
+			}
+
+			.highlight circle {
+				fill: orange;
+				stroke: red;
+				stroke-width: 3px;
+			}
+
+			.node text {
+				font: 12px sans-serif;
+			}
+
+			.link {
+				fill: none;
+				stroke: #ccc;
+				stroke-width: 2px;
+			}
+
+			.highlight-link {
+				stroke: orange;
+				stroke-width: 3px;
+			}
+		</style>
 		<style>
 			/* #region图标 */
 			@font-face {
@@ -498,7 +572,13 @@
 				font-size: 10px;
 				/* 调整图标大小 */
 			}
+
+			#decision-tree {
+				width: 100%;
+				height: 100%;
+			}
 		</style>
+		<script src="https://d3js.org/d3.v6.min.js"></script>
 
 		<script>
 			new Vue({
@@ -513,6 +593,19 @@
 				}),
 				data() {
 					return {
+						// 个人资料
+						profileDialog: false,
+						userProfile: {
+							username: '用户123', // 示例数据
+							email: 'user123@example.com' // 示例数据
+						},
+						passwordForm: {
+							currentPassword: '',
+							newPassword: '',
+							confirmPassword: ''
+						},
+						// 决策树
+						showTreeDialog: false,
 						// 用户信息
 						userId: 0,
 						username: "",
@@ -533,7 +626,7 @@
 							name: '',
 							description: '',
 							function: '',
-							personalInfo: ''
+							user_detail: ''
 						},
 						assistantDialog: false,
 						// 消息相关
@@ -550,7 +643,7 @@
 						newEmail: "",
 						// 用户操作
 						menuOpen: false,
-						changePasswordDialog: false,
+						passwordDialog: false,
 						// 系统设置
 						showProfile: false,
 						notificationTypes: [],
@@ -565,13 +658,30 @@
 						// 心情
 						moodIcon: "mdi-emoticon-outline",
 						moodColor: "black",
-						immersiveMode: false
-
+						immersiveMode: false,
+						// 决策树
+						treeData: {
+							name: "用户",
+							children: [{
+								name: "判断内容类型",
+								children: [{
+										name: "RAG知识库查询系统",
+									},
+									{
+										name: "心理大语言模型助手",
+									},
+									{
+										name: "心理状态预警系统",
+									},
+								],
+							}, ],
+						},
 					};
 				},
 				mounted() {
+
 					this.darkMode = this.getCookie("darkMode");
-					this.$vuetify.theme.dark= this.getCookie("darkMode");
+					this.$vuetify.theme.dark = this.getCookie("darkMode");
 
 					this.checkAuthentication();
 					window.addEventListener('keydown', this.handleHotkey);
@@ -582,19 +692,153 @@
 					}
 				},
 				methods: {
-					daozan(message){
+					// 打开修改密码对话框
+					openPasswordDialog() {
+						this.passwordDialog = true;
+					},
+					// 关闭修改密码对话框
+					closePasswordDialog() {
+						this.passwordDialog = false;
+					},
+					// 处理沉浸模式按钮点击事件
+					handleImmersionModeClick() {
+						this.showSnackbar();
+					},
+					// 显示 Snackbar
+					showSnackbar() {
+						this.isSnackbarVisible = true;
+					},
+					// 关闭 Snackbar
+					closeSnackbar() {
+						this.isSnackbarVisible = false;
+					},
+					clearChatHistory() {
+						// 删除聊天记录
+						localStorage.removeItem('chatMessages'); // 假设聊天记录存储在'chatHistory'键下
+						// 你可以在这里添加其他需要删除的缓存项
+
+
+						// 提示用户聊天记录已删除
+						this.errorMessage = "聊天记录已删除",
+							this.showToast = true,
+							this.messages = [{
+								sender: 'robot',
+								content: '欢迎来到心聆守护， 让我们一起来进行心理探讨和交流吧。 我可以为您查找心理知识、深入分析心理问题和为你提供安全保护。🤗🤗🤗 '
+							}]
+
+					},
+					drawDecisionTree() {
+						// 等待下一次 DOM 更新周期
+						this.$nextTick(() => {
+							// 获取容器元素
+							const container = document.getElementById("decision-tree");
+
+							// 清空之前的图表
+							container.innerHTML = "";
+
+							// 定义节点和边
+							const nodes = new vis.DataSet([{
+									id: 1,
+									label: "用户"
+								},
+								{
+									id: 2,
+									label: "判断内容类型"
+								},
+								{
+									id: 3,
+									label: "rag知识库查询系统"
+								},
+								{
+									id: 4,
+									label: "心理大语言模型助手"
+								},
+								{
+									id: 5,
+									label: "心理状态预警系统"
+								}
+							]);
+
+							const edges = new vis.DataSet([{
+									from: 1,
+									to: 2
+								},
+								{
+									from: 2,
+									to: 3
+								},
+								{
+									from: 2,
+									to: 4
+								},
+								{
+									from: 2,
+									to: 5
+								}
+							]);
+
+							// 创建网络
+							const data = {
+								nodes: nodes,
+								edges: edges
+							};
+							const options = {
+								layout: {
+									hierarchical: {
+										direction: "UD",
+										sortMethod: "directed"
+									}
+								},
+								physics: false
+							};
+
+							new vis.Network(container, data, options);
+						});
+					},
+					daozan(message) {
 						this.errorMessage = '反馈成功，谢谢！';
 						this.showToast = true;
 					},
-					  copyToClipboard(text) {
-					    navigator.clipboard.writeText(text).then(() => {
-							this.errorMessage = '文本已复制到剪贴板';
+					copyToClipboard(text) {
+						if (navigator.clipboard) {
+							navigator.clipboard.writeText(text).then(() => {
+								this.errorMessage = '文本已复制到剪贴板';
+								this.showToast = true;
+							}).catch(err => {
+								this.fallbackCopyTextToClipboard(text);
+							});
+						} else {
+							this.fallbackCopyTextToClipboard(text);
+						}
+					},
+
+					fallbackCopyTextToClipboard(text) {
+						// Create a temporary textarea element, set its value to the text to copy and append it to the body
+						const textarea = document.createElement('textarea');
+						textarea.value = text;
+						document.body.appendChild(textarea);
+
+						// Select the text in the textarea
+						textarea.select();
+						try {
+							// Execute the copy command
+							const result = document.execCommand('copy');
+							if (result) {
+								this.errorMessage = '文本已复制到剪贴板';
+								this.showToast = true;
+							} else {
+								this.errorMessage = '复制失败，请重试！';
+								this.showToast = true;
+							}
+						} catch (err) {
+							this.errorMessage = '复制失败，请重试！' + err;
 							this.showToast = true;
-					    }).catch(err => {
-							this.errorMessage = '复制失败，请重试！'+err;
-							this.showToast = true;
-					    });
-					  },
+						}
+
+						// Remove the textarea from the body
+						document.body.removeChild(textarea);
+					},
+
 					// 检查用户登录状态
 					checkAuthentication() {
 						if (!this.getCookie("isAuthenticated")) {
@@ -602,6 +846,8 @@
 						} else {
 							this.userId = this.getCookie("user_id");
 							this.username = this.getCookie("username");
+							this.userProfile.username = this.username
+							// this.userProfile.email=
 							this.fetchAssistants();
 						}
 					},
@@ -786,8 +1032,9 @@
 					},
 					saveAssistant() {
 						// 检查输入内容的合理
-						if (!this.assistant.name || !this.assistant.description || !this.assistant.function || !this
-							.assistant.personalInfo) {
+						if (!this.assistant.name || !this.assistant.description || !this.assistant.function || !
+							this
+							.assistant.user_detail) {
 							this.errorMessage = '请输入内容';
 							this.showToast = true;
 							return;
@@ -795,14 +1042,26 @@
 						} else {
 
 							this.loading = true;
+							// const aiResponse = await axios.post(`${this.url}/assistant/ai/choice`, {
+							// 	message: sendMessage,
+							// 	user_id: this.userId
+							// }, {
+							// 	headers: {
+							// 		'Content-Type': 'application/x-www-form-urlencoded'
+							// 	}
+							// });
 							// 在这里编写保存助手的逻辑
 							// 可以发送请求将输入框中的数据保存到数据库等
 							axios.post(this.url + '/assistant/create', {
-									user_id: this.userId,
+									user_id: parseInt(this.userId),
 									name: this.assistant.name,
 									description: this.assistant.description,
 									function: this.assistant.function,
-									user_detail: this.assistant.personalInfo
+									user_detail: this.assistant.user_detail
+								}, {
+									headers: {
+										'Content-Type': 'application/x-www-form-urlencoded',
+									}
 								})
 								.then(response => {
 									data = response.data
@@ -812,7 +1071,10 @@
 										this.getNewAssistant(this.userId);
 									}
 
-								})
+								}).catch(error => {
+									this.errorMessage = error.message;
+									this.showToast = true;
+								});
 						}
 
 						// 保存成功后关闭对话框
@@ -927,10 +1189,15 @@
 									this.messages[this.messages.length - 1].content = "检测到危险言论!";
 									this.showToast = true;
 									this.errorMessage = "检测到你有危险言论，已经发生消息到紧急联系人";
-									response = await axios.post(`${this.url}/message/insert`, {
+									response = await axios.post(`${this.url}/assistant/ai/chat`, {
 										message: sendMessage,
-										user_id: this.userId
+										assistant_id: this.selectId
+									}, {
+										headers: {
+											'Content-Type': 'application/x-www-form-urlencoded'
+										}
 									});
+									content = response.data.data;
 									break;
 								default:
 									this.messages[this.messages.length - 1].content = "生成中...";
@@ -956,7 +1223,8 @@
 							let index = 0;
 							const intervalId = setInterval(() => {
 								if (index < content.length) {
-									this.messages[this.messages.length - 1].content += content[index];
+									this.messages[this.messages.length - 1].content += content[
+										index];
 									index++;
 								} else {
 									clearInterval(intervalId); // 结束循环
@@ -997,12 +1265,12 @@
 					// 查看个人信息
 					viewProfile() {
 						// Add logic to view profile
-						alert("View Profile");
+						this.profileDialog = true;
 						this.menuOpen = false;
 					},
 					// 更改密码
 					changePassword() {
-						this.changePasswordDialog = true;
+						this.passwordDialog = true;
 						this.menuOpen = false;
 					},
 					// 退出登录
